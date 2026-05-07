@@ -1,0 +1,207 @@
+<?php
+
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use App\Models\Cart;
+use App\Models\Order;
+use App\Models\OrderItem;
+use App\Models\Shipment;
+use App\Models\Payment;
+use App\Models\Wallet;
+use App\Models\Product;
+use App\Services\DiscountEngine;
+use App\Services\ShippingCalculator;
+use App\Services\InventoryManager;
+use App\Services\OrderStateMachine;
+use App\Services\PaymentProcessor;
+use App\Services\NotificationService;
+
+class CheckoutController extends Controller
+{
+    public function index()
+    {
+        $cart = Cart::where('user_id', auth()->id())
+            ->with('items.product.business.businessProfile', 'items.variant')
+            ->first();
+
+        if (!$cart || $cart->items->isEmpty()) {
+            return redirect()->route('cart.index')->with('error', 'Your cart is empty.');
+        }
+
+        $cart->recalculate();
+
+        $wallet = Wallet::where('user_id', auth()->id())->first();
+
+        return view('checkout.index', compact('cart', 'wallet'));
+    }
+
+    public function store(Request $request)
+    {
+        $validated = $request->validate([
+            'shipping_address.name' => 'required|string',
+            'shipping_address.line1' => 'required|string',
+            'shipping_address.city' => 'required|string',
+            'shipping_address.state' => 'required|string',
+            'shipping_address.postal' => 'required|string',
+            'shipping_address.country' => 'required|string',
+            'billing_address' => 'nullable|array',
+            'payment_method' => 'required|in:stripe,paypal,bank_transfer,cod,wallet',
+            'notes' => 'nullable|string',
+        ]);
+
+        $cart = Cart::where('user_id', auth()->id())
+            ->with('items.product')
+            ->first();
+
+        if (!$cart || $cart->items->isEmpty()) {
+            return back()->with('error', 'Cart is empty.');
+        }
+
+        DB::beginTransaction();
+        try {
+            $grouped = $cart->items->groupBy(fn($item) => $item->product->business_id);
+            $orders = [];
+
+            foreach ($grouped as $businessId => $items) {
+                $subtotal = 0;
+                $discountTotal = 0;
+                $shippingTotal = 0;
+
+                foreach ($items as $item) {
+                    $product = $item->product;
+                    $calc = DiscountEngine::calculate($product, $item->quantity, $item->type);
+                    $shipping = ShippingCalculator::calculateForProduct(
+                        $product,
+                        ($product->weight ?? 0.5) * $item->quantity
+                    );
+
+                    $subtotal += $calc['base_price'] * $item->quantity;
+                    $discountTotal += $calc['discount_amount'];
+                    $shippingTotal += $shipping;
+                }
+
+                $commissionRate = (float) \App\Models\Setting::get('commission_rate', 10);
+                $platformFee = (float) \App\Models\Setting::get('platform_fee', 2.50);
+                $total = ($subtotal - $discountTotal) + $shippingTotal + $platformFee;
+                $commission = ($subtotal - $discountTotal) * ($commissionRate / 100);
+
+                $order = Order::create([
+                    'buyer_id' => auth()->id(),
+                    'business_id' => $businessId,
+                    'type' => $cart->type === 'wholesale' ? 'b2b' : 'retail',
+                    'status' => Order::STATUS_PENDING,
+                    'subtotal' => $subtotal,
+                    'discount_total' => $discountTotal,
+                    'shipping_fee' => $shippingTotal,
+                    'platform_fee' => $platformFee,
+                    'commission' => $commission,
+                    'total' => $total,
+                    'shipping_address' => $validated['shipping_address'],
+                    'billing_address' => $validated['billing_address'] ?? $validated['shipping_address'],
+                    'notes' => $validated['notes'] ?? null,
+                    'estimated_delivery_date' => ShippingCalculator::estimateDeliveryDate(),
+                ]);
+
+                foreach ($items as $item) {
+                    $product = $item->product;
+                    $calc = DiscountEngine::calculate($product, $item->quantity, $item->type);
+
+                    OrderItem::create([
+                        'order_id' => $order->id,
+                        'product_id' => $product->id,
+                        'variant_id' => $item->variant_id,
+                        'variant_name' => $item->variant ? $item->variant->name : null,
+                        'quantity' => $item->quantity,
+                        'price' => $calc['unit_price'],
+                        'original_price' => $calc['base_price'],
+                        'discount_amount' => $calc['discount_amount'],
+                        'shipping_fee' => ShippingCalculator::calculateForProduct(
+                            $product,
+                            ($product->weight ?? 0.5) * $item->quantity
+                        ),
+                    ]);
+                }
+
+                Shipment::create([
+                    'order_id' => $order->id,
+                    'status' => 'pending',
+                    'destination_address' => $validated['shipping_address'],
+                    'estimated_delivery_date' => $order->estimated_delivery_date,
+                ]);
+
+                $orders[] = $order;
+
+                if ($validated['payment_method'] === 'wallet') {
+                    $wallet = Wallet::where('user_id', auth()->id())->first();
+                    $payment = PaymentProcessor::processWalletPayment($order, $wallet, $total);
+                    if (!$payment) {
+                        throw new \Exception('Insufficient wallet balance.');
+                    }
+                } elseif (in_array($validated['payment_method'], ['cod', 'bank_transfer'])) {
+                    Payment::create([
+                        'order_id' => $order->id,
+                        'user_id' => auth()->id(),
+                        'type' => 'full',
+                        'amount' => 0,
+                        'balance_due' => $total,
+                        'method' => $validated['payment_method'],
+                        'status' => 'pending',
+                    ]);
+                } else {
+                    Payment::create([
+                        'order_id' => $order->id,
+                        'user_id' => auth()->id(),
+                        'type' => 'full',
+                        'amount' => $total,
+                        'balance_due' => 0,
+                        'method' => $validated['payment_method'],
+                        'status' => 'pending',
+                    ]);
+                }
+            }
+
+            $cart->items()->delete();
+            $cart->recalculate();
+
+            DB::commit();
+
+            $firstOrder = $orders[0];
+            return redirect()->route('orders.show', $firstOrder)
+                ->with('success', 'Order placed successfully!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function pay(Request $request, Order $order)
+    {
+        if ($order->buyer_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $request->validate([
+            'amount' => 'required|numeric|min:0.01',
+            'method' => 'required|in:stripe,paypal,bank_transfer,wallet',
+        ]);
+
+        $amount = (float) $request->amount;
+        $method = $request->method;
+
+        if ($method === 'wallet') {
+            $wallet = Wallet::where('user_id', auth()->id())->first();
+            $payment = PaymentProcessor::processWalletPayment($order, $wallet, $amount);
+            if (!$payment) {
+                return back()->with('error', 'Insufficient wallet balance.');
+            }
+        } else {
+            PaymentProcessor::process($order, $method, $amount);
+        }
+
+        NotificationService::notifyPaymentConfirmation(auth()->user(), $order->id, $amount);
+
+        return back()->with('success', 'Payment processed successfully.');
+    }
+}

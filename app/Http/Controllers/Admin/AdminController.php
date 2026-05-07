@@ -11,6 +11,8 @@ use App\Models\Dispute;
 use App\Models\Category;
 use App\Models\Setting;
 use App\Models\BusinessProfile;
+use App\Models\Review;
+use App\Models\TransactionLog;
 
 class AdminController extends Controller
 {
@@ -187,10 +189,50 @@ class AdminController extends Controller
         $retailGrowth = Order::where('type', 'retail')->count();
         $b2bGrowth = Order::where('type', 'b2b')->count();
 
+        $totalSales = Order::whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_COMPLETED])->sum('total');
+        $totalCommission = Order::sum('commission') + Order::sum('platform_fee');
+        $activeBusinesses = User::where('role', User::ROLE_BUSINESS)->where('status', 'active')->count();
+        $pendingDisputes = Dispute::where('status', 'open')->count();
+
+        $monthlyRevenue = Order::where('created_at', '>=', now()->subDays(30))
+            ->selectRaw('DATE(created_at) as date, SUM(total) as revenue, SUM(commission + platform_fee) as commission')
+            ->groupBy('date')
+            ->orderBy('date')
+            ->get();
+
+        $topCategories = \App\Services\RecommendationEngine::bestSellingCategories(10);
+
         return view('admin.analytics', compact(
             'topBusiness', 'topProduct', 'mostActiveBuyer',
-            'conversionRate', 'retailGrowth', 'b2bGrowth'
+            'conversionRate', 'retailGrowth', 'b2bGrowth',
+            'totalSales', 'totalCommission', 'activeBusinesses',
+            'pendingDisputes', 'monthlyRevenue', 'topCategories'
         ));
+    }
+
+    public function reviews()
+    {
+        $reviews = Review::with('product', 'user')
+            ->orderByDesc('created_at')
+            ->paginate(50);
+
+        return view('admin.reviews', compact('reviews'));
+    }
+
+    public function updateReviewStatus(Request $request, Review $review)
+    {
+        $request->validate(['status' => 'required|in:pending,approved,rejected']);
+        $review->update(['status' => $request->status]);
+        return back()->with('success', 'Review status updated.');
+    }
+
+    public function transactionLogs()
+    {
+        $logs = TransactionLog::with('user')
+            ->orderByDesc('created_at')
+            ->paginate(50);
+
+        return view('admin.transactions', compact('logs'));
     }
 
     public function verifications()

@@ -12,33 +12,41 @@ class RoleUserSeeder extends Seeder
      */
     public function run(): void
     {
-        $admin = \App\Models\User::create([
-            'name' => 'Admin User',
-            'email' => 'admin@purefit.com',
-            'password' => 'password',
-            'role' => \App\Models\User::ROLE_ADMIN,
-        ]);
+        $admin = \App\Models\User::firstOrCreate(
+            ['email' => 'admin@purefit.com'],
+            [
+                'name' => 'Admin User',
+                'password' => 'password',
+                'role' => \App\Models\User::ROLE_ADMIN,
+            ]
+        );
 
-        $business = \App\Models\User::create([
-            'name' => 'Business Owner',
-            'email' => 'business@purefit.com',
-            'password' => 'password',
-            'role' => \App\Models\User::ROLE_BUSINESS,
-        ]);
+        $business = \App\Models\User::firstOrCreate(
+            ['email' => 'business@purefit.com'],
+            [
+                'name' => 'Business Owner',
+                'password' => 'password',
+                'role' => \App\Models\User::ROLE_BUSINESS,
+            ]
+        );
 
-        \App\Models\BusinessProfile::create([
-            'user_id' => $business->id,
-            'business_name' => 'PureFit Wholesale',
-            'business_address' => '123 Commerce St, City',
-            'business_phone' => '09123456789',
-            'tax_id' => 'TIN-123456789',
-        ]);
+        \App\Models\BusinessProfile::firstOrCreate(
+            ['user_id' => $business->id],
+            [
+                'business_name' => 'PureFit Wholesale',
+                'business_address' => '123 Commerce St, City',
+                'business_phone' => '09123456789',
+                'tax_id' => 'TIN-123456789',
+            ]
+        );
 
-        \App\Models\User::create([
-            'name' => 'Solo Buyer',
-            'email' => 'buyer@purefit.com',
-            'password' => 'password',
-            'role' => \App\Models\User::ROLE_BUYER,
-        ]);
+        \App\Models\User::firstOrCreate(
+            ['email' => 'buyer@purefit.com'],
+            [
+                'name' => 'Solo Buyer',
+                'password' => 'password',
+                'role' => \App\Models\User::ROLE_BUYER,
+            ]
+        );
     }
 }

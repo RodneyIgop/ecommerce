@@ -69,6 +69,24 @@ class AdminDataSeeder extends Seeder
             ]);
         }
 
+        // Update existing products with marketplace fields if not already set
+        Product::where('business_id', $business->id)->whereNull('sku')->update([
+            'sku' => \DB::raw("CONCAT('SKU-', id, '-', FLOOR(RAND() * 10000))"),
+            'weight' => \DB::raw("ROUND(RAND() * 2 + 0.2, 2)"),
+            'dimensions' => '30x20x5 cm',
+            'moq' => 10,
+            'shipping_base_rate' => 5.00,
+            'shipping_weight_rate' => 2.50,
+            'shipping_handling_fee' => 1.00,
+            'is_wholesale_enabled' => true,
+        ]);
+
+        Product::where('stock', 0)->where('business_id', $business->id)->update([
+            'is_preorder' => true,
+            'preorder_deposit_percent' => 25,
+            'estimated_production_days' => 14,
+        ]);
+
         // Sample Orders
         $buyer = \App\Models\User::where('role', \App\Models\User::ROLE_BUYER)->first();
         if ($business && $buyer && Order::count() === 0) {

@@ -21,4 +21,19 @@ class BusinessProfile extends Model
     {
         return $this->belongsTo(User::class);
     }
+
+    public function products()
+    {
+        return $this->hasMany(Product::class, 'business_id', 'user_id');
+    }
+
+    public function shippingRules()
+    {
+        return $this->hasMany(ShippingRule::class, 'business_id', 'user_id');
+    }
+
+    public function getStoreSlug(): string
+    {
+        return strtolower(str_replace(' ', '-', $this->business_name));
+    }
 }

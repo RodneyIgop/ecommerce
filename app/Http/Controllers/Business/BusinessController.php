@@ -8,6 +8,16 @@ use App\Models\Product;
 use App\Models\Order;
 use App\Models\Category;
 use App\Models\BulkPricing;
+use App\Models\DiscountTier;
+use App\Models\ShippingRule;
+use App\Models\ProductVariant;
+use App\Models\InventoryLog;
+use App\Models\PreorderQueue;
+use App\Models\Notification;
+use App\Services\InventoryManager;
+use App\Services\NotificationService;
+use App\Services\OrderStateMachine;
+use Illuminate\Support\Facades\DB;
 
 class BusinessController extends Controller
 {
@@ -77,15 +87,43 @@ class BusinessController extends Controller
         ));
     }
 
-    public function products()
+    public function products(Request $request)
     {
         $businessId = auth()->id();
-        $products = Product::where('business_id', $businessId)
+        $query = Product::where('business_id', $businessId)
             ->whereIn('status', ['active', 'flagged'])
-            ->with('category')
-            ->latest()
-            ->get();
+            ->with('category');
+            
+        // Filter by category if selected
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+        
+        $products = $query->latest()->get();
         $categories = Category::all();
+        return view('business.products', compact('products', 'categories'));
+    }
+
+    public function filterProducts(Request $request)
+    {
+        $businessId = auth()->id();
+        $query = Product::where('business_id', $businessId)
+            ->whereIn('status', ['active', 'flagged'])
+            ->with('category');
+            
+        // Filter by category if selected
+        if ($request->filled('category')) {
+            $query->where('category_id', $request->category);
+        }
+        
+        $products = $query->latest()->get();
+        $categories = Category::all();
+        
+        // If AJAX request, return only the products grid
+        if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
+            return view('business.products_grid', compact('products'))->render();
+        }
+        
         return view('business.products', compact('products', 'categories'));
     }
 
@@ -272,11 +310,276 @@ class BusinessController extends Controller
 
     public function sales()
     {
-        $orders = collect();
-        $totalRevenue = 0;
-        $totalCommission = 0;
-        $netEarnings = 0;
+        $businessId = auth()->id();
+
+        $orders = Order::where('business_id', $businessId)
+            ->with('buyer', 'items.product')
+            ->orderByDesc('created_at')
+            ->paginate(20);
+
+        $totalRevenue = Order::where('business_id', $businessId)
+            ->whereIn('status', [Order::STATUS_DELIVERED, Order::STATUS_COMPLETED])
+            ->sum('total');
+
+        $totalCommission = Order::where('business_id', $businessId)
+            ->sum('commission');
+
+        $netEarnings = $totalRevenue - $totalCommission;
 
         return view('business.sales', compact('orders', 'totalRevenue', 'totalCommission', 'netEarnings'));
+    }
+
+    public function discountTiers()
+    {
+        $tiers = DiscountTier::where('business_id', auth()->id())
+            ->with('product')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $products = Product::where('business_id', auth()->id())->where('status', 'active')->get();
+
+        return view('business.discount_tiers', compact('tiers', 'products'));
+    }
+
+    public function storeDiscountTier(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => 'nullable|exists:products,id',
+            'min_quantity' => 'required|integer|min:1',
+            'max_quantity' => 'nullable|integer|min:1',
+            'discount_percent' => 'required|numeric|min:0|max:100',
+        ]);
+
+        $product = $validated['product_id'] ? Product::find($validated['product_id']) : null;
+        if ($product && $product->business_id !== auth()->id()) {
+            abort(403);
+        }
+
+        DiscountTier::create([
+            'business_id' => auth()->id(),
+            'product_id' => $validated['product_id'] ?? null,
+            'min_quantity' => $validated['min_quantity'],
+            'max_quantity' => $validated['max_quantity'] ?? null,
+            'discount_percent' => $validated['discount_percent'],
+        ]);
+
+        return back()->with('success', 'Discount tier created.');
+    }
+
+    public function toggleDiscountTier(DiscountTier $tier)
+    {
+        if ($tier->business_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $tier->update(['is_active' => !$tier->is_active]);
+        return back()->with('success', 'Discount tier updated.');
+    }
+
+    public function shippingRules()
+    {
+        $rules = ShippingRule::where('business_id', auth()->id())
+            ->orderByDesc('created_at')
+            ->get();
+
+        return view('business.shipping_rules', compact('rules'));
+    }
+
+    public function storeShippingRule(Request $request)
+    {
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'type' => 'required|in:local,national,international',
+            'base_rate' => 'required|numeric|min:0',
+            'weight_rate' => 'required|numeric|min:0',
+            'distance_rate' => 'required|numeric|min:0',
+            'handling_fee' => 'required|numeric|min:0',
+            'min_weight' => 'nullable|numeric|min:0',
+            'max_weight' => 'nullable|numeric|min:0',
+            'regions' => 'nullable|array',
+            'couriers' => 'nullable|array',
+        ]);
+
+        ShippingRule::create([
+            'business_id' => auth()->id(),
+            'name' => $validated['name'],
+            'type' => $validated['type'],
+            'base_rate' => $validated['base_rate'],
+            'weight_rate' => $validated['weight_rate'],
+            'distance_rate' => $validated['distance_rate'],
+            'handling_fee' => $validated['handling_fee'],
+            'min_weight' => $validated['min_weight'] ?? null,
+            'max_weight' => $validated['max_weight'] ?? null,
+            'regions' => $validated['regions'] ?? null,
+            'couriers' => $validated['couriers'] ?? null,
+        ]);
+
+        return back()->with('success', 'Shipping rule created.');
+    }
+
+    public function toggleShippingRule(ShippingRule $rule)
+    {
+        if ($rule->business_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $rule->update(['is_active' => !$rule->is_active]);
+        return back()->with('success', 'Shipping rule updated.');
+    }
+
+    public function inventory()
+    {
+        $businessId = auth()->id();
+
+        $products = Product::where('business_id', $businessId)
+            ->with('variants')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $lowStock = Product::where('business_id', $businessId)
+            ->whereRaw('stock - COALESCE(reserved_stock, 0) <= 10')
+            ->where('status', 'active')
+            ->get();
+
+        $logs = InventoryLog::whereHas('product', function ($q) use ($businessId) {
+            $q->where('business_id', $businessId);
+        })->latest()->limit(100)->get();
+
+        return view('business.inventory', compact('products', 'lowStock', 'logs'));
+    }
+
+    public function updateInventory(Request $request, Product $product)
+    {
+        if ($product->business_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'quantity' => 'required|integer',
+            'reason' => 'required|string|max:255',
+        ]);
+
+        $quantity = (int) $validated['quantity'];
+
+        if ($quantity > 0) {
+            InventoryManager::restock($product, $quantity, $validated['reason'], auth()->id());
+        } elseif ($quantity < 0) {
+            $deduct = abs($quantity);
+            if ($product->stock < $deduct) {
+                return back()->with('error', 'Insufficient stock to deduct.');
+            }
+            $product->stock -= $deduct;
+            $product->save();
+
+            InventoryLog::create([
+                'product_id' => $product->id,
+                'action' => 'adjustment',
+                'quantity_change' => -$deduct,
+                'stock_after' => $product->stock,
+                'reserved_after' => $product->reserved_stock ?? 0,
+                'reason' => $validated['reason'],
+                'user_id' => auth()->id(),
+            ]);
+        }
+
+        return back()->with('success', 'Inventory updated.');
+    }
+
+    public function preorders()
+    {
+        $businessId = auth()->id();
+
+        $preorders = PreorderQueue::whereHas('product', function ($q) use ($businessId) {
+            $q->where('business_id', $businessId);
+        })
+        ->with('product', 'user')
+        ->orderByDesc('created_at')
+        ->paginate(20);
+
+        return view('business.preorders', compact('preorders'));
+    }
+
+    public function fulfillPreorder(PreorderQueue $preorder)
+    {
+        $product = $preorder->product;
+        if ($product->business_id !== auth()->id()) {
+            abort(403);
+        }
+
+        DB::beginTransaction();
+        try {
+            $preorder->update([
+                'status' => 'fulfilled',
+                'fulfilled_at' => now(),
+            ]);
+
+            $product->reserved_stock = max(0, ($product->reserved_stock ?? 0) - $preorder->quantity);
+            $product->stock -= $preorder->quantity;
+            $product->save();
+
+            InventoryLog::create([
+                'product_id' => $product->id,
+                'action' => 'preorder_fulfill',
+                'quantity_change' => -$preorder->quantity,
+                'stock_after' => $product->stock,
+                'reserved_after' => $product->reserved_stock,
+                'reason' => 'Preorder fulfillment #' . $preorder->id,
+                'order_id' => null,
+                'user_id' => auth()->id(),
+            ]);
+
+            NotificationService::notify(
+                $preorder->user,
+                'preorder_update',
+                'Preorder Fulfilled',
+                "Your preorder for {$product->name} has been fulfilled and is ready for shipping.",
+                ['preorder_id' => $preorder->id, 'product_id' => $product->id]
+            );
+
+            DB::commit();
+            return back()->with('success', 'Preorder fulfilled.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', $e->getMessage());
+        }
+    }
+
+    public function productVariants(Product $product)
+    {
+        if ($product->business_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $variants = ProductVariant::where('product_id', $product->id)->get();
+        return view('business.variants', compact('product', 'variants'));
+    }
+
+    public function storeVariant(Request $request, Product $product)
+    {
+        if ($product->business_id !== auth()->id()) {
+            abort(403);
+        }
+
+        $validated = $request->validate([
+            'name' => 'required|string|max:255',
+            'sku' => 'nullable|string|max:255',
+            'attributes' => 'nullable|array',
+            'image' => 'nullable|file|max:10240',
+        ]);
+
+        $imagePath = null;
+        if ($request->hasFile('image') && $request->file('image')->isValid()) {
+            $imagePath = $request->file('image')->store('variants', 'public');
+        }
+
+        ProductVariant::create([
+            'product_id' => $product->id,
+            'name' => $validated['name'],
+            'sku' => $validated['sku'] ?? null,
+            'attributes' => $validated['attributes'] ?? null,
+            'image' => $imagePath,
+        ]);
+
+        return back()->with('success', 'Variant created.');
     }
 }
