@@ -18,10 +18,16 @@ class User extends Authenticatable
      *
      * @var list<string>
      */
+    const ROLE_ADMIN = 'admin';
+    const ROLE_BUSINESS = 'business';
+    const ROLE_BUYER = 'buyer';
+
     protected $fillable = [
         'name',
         'email',
         'password',
+        'role',
+        'status',
     ];
 
     /**
@@ -43,7 +49,36 @@ class User extends Authenticatable
     {
         return [
             'email_verified_at' => 'datetime',
-            'password' => 'hashed',
         ];
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->role === self::ROLE_ADMIN;
+    }
+
+    public function isBusiness(): bool
+    {
+        return $this->role === self::ROLE_BUSINESS;
+    }
+
+    public function isBuyer(): bool
+    {
+        return $this->role === self::ROLE_BUYER;
+    }
+
+    public function businessProfile()
+    {
+        return $this->hasOne(\App\Models\BusinessProfile::class);
+    }
+
+    public function ordersAsBusiness()
+    {
+        return $this->hasMany(\App\Models\Order::class, 'business_id');
+    }
+
+    public function ordersAsBuyer()
+    {
+        return $this->hasMany(\App\Models\Order::class, 'buyer_id');
     }
 }

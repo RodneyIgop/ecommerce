@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Log In — PureFit Apparel</title>
+    @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        .font-serif-display { font-family: 'Instrument Serif', serif; }
+        .font-sans-body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+    </style>
+</head>
+<body class="font-sans-body text-gray-900 antialiased bg-[#f5f3ef] min-h-screen flex items-center justify-center">
+
+    <div class="w-full max-w-[420px] px-6">
+        <!-- Logo -->
+        <div class="text-center mb-10">
+            <a href="/" class="text-[22px] font-semibold tracking-[0.2em] uppercase text-gray-900">
+                PureFit Apparel
+            </a>
+        </div>
+
+        <!-- Heading -->
+        <div class="text-center mb-8">
+            <h1 class="font-serif-display text-[32px] sm:text-[40px] leading-[1.1] text-gray-900 mb-3">
+                Welcome back.
+            </h1>
+            <p class="text-[14px] text-gray-600">
+                Log in to your account to continue.
+            </p>
+        </div>
+
+        <!-- Login Form -->
+        <form method="POST" action="{{ route('login') }}" class="space-y-5">
+            @csrf
+
+            <div>
+                <label for="email" class="block text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-700 mb-2">Email</label>
+                <input type="email" id="email" name="email" value="{{ old('email') }}" required
+                       class="w-full bg-white border border-[#ddd8d0] px-4 py-3 text-[14px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#111] transition-colors"
+                       placeholder="you@example.com">
+                @error('email')
+                    <p class="mt-2 text-[12px] text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
+                <label for="password" class="block text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-700 mb-2">Password</label>
+                <input type="password" id="password" name="password" required
+                       class="w-full bg-white border border-[#ddd8d0] px-4 py-3 text-[14px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#111] transition-colors"
+                       placeholder="Enter your password">
+                @error('password')
+                    <p class="mt-2 text-[12px] text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div class="flex items-center justify-between">
+                <label class="flex items-center gap-2 cursor-pointer">
+                    <input type="checkbox" name="remember" class="w-4 h-4 border border-[#ddd8d0] accent-[#111]">
+                    <span class="text-[13px] text-gray-600">Remember me</span>
+                </label>
+                <a href="#" class="text-[13px] text-gray-600 hover:text-black transition-colors underline underline-offset-2">Forgot password?</a>
+            </div>
+
+            <button type="submit"
+                    class="w-full bg-[#111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase px-8 py-3.5 hover:bg-gray-800 transition-colors">
+                Log In
+            </button>
+        </form>
+
+        <!-- Divider -->
+        <div class="relative my-8">
+            <div class="absolute inset-0 flex items-center">
+                <div class="w-full border-t border-[#ddd8d0]"></div>
+            </div>
+            <div class="relative flex justify-center">
+                <span class="bg-[#f5f3ef] px-4 text-[12px] text-gray-500 uppercase tracking-wider">or</span>
+            </div>
+        </div>
+
+        <!-- Register Link -->
+        <p class="text-center text-[14px] text-gray-600">
+            Don't have an account?
+            <a href="#" class="text-gray-900 font-medium hover:underline underline-offset-2 ml-1">Create an account</a>
+        </p>
+    </div>
+
+</body>
+</html>
