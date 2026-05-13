@@ -7,7 +7,6 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Business\BusinessController;
 use App\Http\Controllers\Buyer\BuyerController;
 use App\Http\Controllers\ProductController;
-use App\Http\Controllers\MarketplaceController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
 use App\Http\Controllers\OrderController;
@@ -16,15 +15,14 @@ use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AnalyticsController;
 use App\Http\Controllers\WalletController;
 use App\Http\Controllers\ShippingController;
+use App\Http\Controllers\LandingPageController;
 
-Route::get('/', [MarketplaceController::class, 'index'])->name('home');
+
+
+
+Route::get('/', [LandingPageController::class, 'index'])->name('home');
 Route::get('/products', [ProductController::class, 'index'])->name('products');
 
-Route::get('/marketplace', [MarketplaceController::class, 'index'])->name('marketplace.index');
-Route::get('/marketplace/products/{product}', [MarketplaceController::class, 'show'])->name('marketplace.show');
-Route::get('/marketplace/stores/{slug}', [MarketplaceController::class, 'store'])->name('marketplace.store');
-Route::post('/marketplace/products/{product}/price', [MarketplaceController::class, 'calculatePrice'])->name('marketplace.price');
-Route::post('/marketplace/products/{product}/review', [MarketplaceController::class, 'storeReview'])->name('marketplace.review')->middleware('auth');
 
 Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::post('/login', [LoginController::class, 'handle']);
@@ -50,9 +48,7 @@ Route::middleware('auth')->group(function () {
     Route::get('/orders', [OrderController::class, 'index'])->name('orders.index');
     Route::get('/orders/{order}', [OrderController::class, 'show'])->name('orders.show');
 
-    Route::get('/wishlist', [MarketplaceController::class, 'wishlist'])->name('wishlist.index');
-    Route::post('/wishlist/{product}', [MarketplaceController::class, 'toggleWishlist'])->name('wishlist.toggle');
-
+    
     Route::get('/preorders/create/{product}', [PreorderController::class, 'create'])->name('preorder.create');
     Route::post('/preorders/{product}', [PreorderController::class, 'store'])->name('preorder.store');
     Route::get('/preorders/{preorder}', [PreorderController::class, 'show'])->name('preorder.show');

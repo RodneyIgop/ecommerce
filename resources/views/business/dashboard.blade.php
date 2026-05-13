@@ -154,29 +154,5 @@
         </div>
     </div>
 
-    <!-- B2B Marketplace -->
-    <div class="bg-white border border-[#e8e5e0] mb-10">
-        <div class="px-6 py-4 border-b border-[#e8e5e0] flex items-center justify-between">
-            <h2 class="text-[13px] font-semibold tracking-[0.1em] uppercase text-gray-700">B2B Marketplace</h2>
-            <a href="#" class="text-[12px] font-semibold tracking-[0.1em] uppercase text-gray-800 hover:text-black transition-colors underline underline-offset-4">Browse wholesale listings</a>
-        </div>
-        <div class="p-6 grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div>
-                <p class="text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-500 mb-1">Wholesale Listings</p>
-                <p class="text-[22px] text-gray-900">{{ $wholesaleListings }}</p>
-            </div>
-            <div>
-                <p class="text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-500 mb-1">Pending Negotiations</p>
-                <p class="text-[22px] text-gray-900">{{ $bulkRequests }}</p>
-            </div>
-            <div>
-                <p class="text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-500 mb-1">Bulk Purchases Made</p>
-                <p class="text-[22px] text-gray-900">{{ $b2bOrders }}</p>
-            </div>
-        </div>
-        <div class="px-6 py-4 border-t border-[#e8e5e0] bg-[#faf9f7]">
-            <p class="text-[13px] text-gray-500">Browse and negotiate wholesale listings from other businesses.</p>
-        </div>
-    </div>
-
+    
 @endsection

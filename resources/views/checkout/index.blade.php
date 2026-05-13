@@ -102,7 +102,7 @@
         @else
         <div class="bg-white border border-[#e8e5e0] p-16 text-center">
             <p class="text-[13px] text-gray-600 mb-6">Your cart is empty.</p>
-            <a href="{{ route('marketplace.index') }}" class="inline-block bg-[#111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase py-3 px-8 hover:bg-gray-800 transition-colors">Continue Shopping</a>
+            <a href="{{ route('products') }}" class="inline-block bg-[#111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase py-3 px-8 hover:bg-gray-800 transition-colors">Continue Shopping</a>
         </div>
         @endif
     </div>
