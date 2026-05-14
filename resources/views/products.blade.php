@@ -479,12 +479,7 @@
             showNotification('Something went wrong', 'error');
 
         } finally {
-
-<<<<<<< HEAD
-            button.innerHTML = 'Add to Cart';
-=======
             button.innerHTML = originalContent;
->>>>>>> remove-wallet
             button.disabled = false;
         }
     }
