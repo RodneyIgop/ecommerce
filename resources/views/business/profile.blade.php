@@ -1,7 +1,7 @@
 @extends('business.layout')
 
 @section('title', 'Business Profile')
-@section('nav-overview', 'bg-[#f5f3ef] text-gray-900')
+@section('nav-profile', 'bg-[#f5f3ef] text-gray-900')
 
 @section('content')
     <!-- Header -->

@@ -67,6 +67,11 @@ class BusinessController extends Controller
 
         $wholesaleListings = Product::where('business_id', $businessId)->where('wholesale_price', '>', 0)->count();
 
+        $recentOrders = Order::where('business_id', $businessId)
+            ->latest()
+            ->take(3)
+            ->get();
+
         return view('business.dashboard', compact(
             'business',
             'totalProducts',
@@ -86,7 +91,8 @@ class BusinessController extends Controller
             'bestSellingProduct',
             'soloBuyerCustomers',
             'businessCustomers',
-            'wholesaleListings'
+            'wholesaleListings',
+            'recentOrders'
         ));
     }
 
@@ -612,15 +618,19 @@ class BusinessController extends Controller
         ];
 
         if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
-            // Delete old logo if exists
-            if ($business->logo && Storage::disk('public')->exists($business->logo)) {
+            if ($business && $business->logo && Storage::disk('public')->exists($business->logo)) {
                 Storage::disk('public')->delete($business->logo);
             }
             $logoPath = $request->file('logo')->store('business-logos', 'public');
             $updateData['logo'] = $logoPath;
         }
 
-        $business->update($updateData);
+        if ($business) {
+            $business->update($updateData);
+        } else {
+            $updateData['user_id'] = auth()->id();
+            BusinessProfile::create($updateData);
+        }
 
         return back()->with('success', 'Business profile updated successfully.');
     }
