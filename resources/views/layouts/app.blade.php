@@ -96,6 +96,8 @@
 
     @yield('content')
 
+    @stack('scripts')
+
     <!-- Cart JavaScript -->
     <script>
         // Update cart count on page load

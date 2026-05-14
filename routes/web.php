@@ -24,6 +24,7 @@ use App\Http\Controllers\LandingPageController;
 
 Route::get('/', [LandingPageController::class, 'index'])->name('home');
 Route::get('/products', [ProductController::class, 'index'])->name('products');
+Route::get('/products/{product}', [ProductController::class, 'show'])->name('products.show');
 
 
 Route::get('/login', [LoginController::class, 'show'])->name('login');
