@@ -87,10 +87,12 @@ class CheckoutController extends Controller
                 $total = ($subtotal - $discountTotal) + $shippingTotal + $platformFee;
                 $commission = ($subtotal - $discountTotal) * ($commissionRate / 100);
 
+                $orderType = $cart->items->contains(fn($item) => $item->type === 'wholesale') ? 'b2b' : 'retail';
+
                 $order = Order::create([
                     'buyer_id' => auth()->id(),
                     'business_id' => $businessId,
-                    'type' => $cart->type === 'wholesale' ? 'b2b' : 'retail',
+                    'type' => $orderType,
                     'status' => Order::STATUS_PENDING,
                     'subtotal' => $subtotal,
                     'discount_total' => $discountTotal,

@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'PureFit Apparel') — PureFit Apparel</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
@@ -59,7 +60,7 @@
                     @endauth
 
                     @guest
-                        <a href="{{ route('login') }}" class="text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-800 hover:text-black transition-colors">
+                        <a href="{{ route('login', ['redirect' => url()->full()]) }}" class="text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-800 hover:text-black transition-colors">
                             Log In
                         </a>
                     @else
@@ -151,6 +152,8 @@
                             method: 'POST',
                             headers: {
                                 'Content-Type': 'application/json',
+                                'Accept': 'application/json',
+                                'X-Requested-With': 'XMLHttpRequest',
                                 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                             },
                             body: JSON.stringify({

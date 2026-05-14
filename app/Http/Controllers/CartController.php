@@ -6,6 +6,8 @@ use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Services\DiscountEngine;
+use App\Services\ShippingCalculator;
 
 class CartController extends Controller
 {
@@ -47,48 +49,28 @@ class CartController extends Controller
             ->first();
 
         if ($existing) {
-            // Update quantity instead of creating new entry
             $newQuantity = $existing->quantity + $quantity;
-            
+
             if ($product->stock < $newQuantity) {
-                if ($request->expectsJson()) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Insufficient stock. Available: ' . $product->stock
-                    ], 400);
-                }
-                return back()->with('error', 'Insufficient stock. Available: ' . $product->stock);
+                return $this->jsonOrRedirect($request, 'Insufficient stock. Available: ' . $product->stock, false, 400);
             }
 
-            $existing->update([
-                'quantity' => $newQuantity,
-                'unit_price' => $product->retail_price,
-            ]);
+            $itemType = $this->resolveCartItemType($product, $newQuantity);
+            $existing->update($this->cartItemPayload($product, $newQuantity, $itemType));
         } else {
-            // Create new cart item
-            CartItem::create([
+            $itemType = $this->resolveCartItemType($product, $quantity);
+            CartItem::create(array_merge([
                 'cart_id' => $cart->id,
                 'product_id' => $product->id,
-                'quantity' => $quantity,
-                'unit_price' => $product->retail_price,
-                'discount_amount' => 0,
-                'shipping_estimate' => 0,
-                'type' => 'retail',
-            ]);
+            ], $this->cartItemPayload($product, $quantity, $itemType)));
         }
 
         $cart->recalculate();
 
-        if ($request->expectsJson()) {
-            return response()->json([
-                'success' => true,
-                'message' => 'Added to cart successfully',
-                'cart_count' => $cart->items->sum('quantity'),
-                'cart_total' => number_format($cart->total, 2)
-            ]);
-        }
-
-        return back()->with('success', 'Added to cart.');
+        return $this->jsonOrRedirect($request, 'Added to cart successfully', true, 200, [
+            'cart_count' => $cart->items->sum('quantity'),
+            'cart_total' => number_format($cart->total, 2),
+        ]);
     }
 
     public function update(Request $request, CartItem $item)
@@ -108,10 +90,8 @@ class CartController extends Controller
             return back()->with('error', 'Insufficient stock. Available: ' . $product->stock);
         }
 
-        $item->update([
-            'quantity' => $quantity,
-            'unit_price' => $product->retail_price,
-        ]);
+        $itemType = $this->resolveCartItemType($product, $quantity);
+        $item->update($this->cartItemPayload($product, $quantity, $itemType));
 
         $item->cart->recalculate();
 
@@ -126,6 +106,45 @@ class CartController extends Controller
         }
 
         return back()->with('success', 'Cart updated.');
+    }
+
+    private function resolveCartItemType(Product $product, int $quantity): string
+    {
+        $user = auth()->user();
+
+        if ($user && $user->isBusiness() && $product->is_wholesale_enabled && $product->wholesale_price > 0) {
+            if (DiscountEngine::validateMoq($product, $quantity, 'wholesale')) {
+                return 'wholesale';
+            }
+        }
+
+        return 'retail';
+    }
+
+    private function cartItemPayload(Product $product, int $quantity, string $type): array
+    {
+        $calculation = DiscountEngine::calculate($product, $quantity, $type);
+
+        return [
+            'quantity' => $quantity,
+            'unit_price' => $calculation['unit_price'],
+            'discount_amount' => $calculation['discount_amount'],
+            'shipping_estimate' => ShippingCalculator::calculateForProduct($product, ($product->weight ?? 0.5) * $quantity),
+            'type' => $type,
+        ];
+    }
+
+    private function jsonOrRedirect(Request $request, string $message, bool $success, int $status = 200, array $data = [])
+    {
+        if ($request->expectsJson()) {
+            return response()->json(array_merge(['success' => $success, 'message' => $message], $data), $status);
+        }
+
+        if ($success) {
+            return back()->with('success', $message);
+        }
+
+        return back()->with('error', $message);
     }
 
     public function remove(CartItem $item)

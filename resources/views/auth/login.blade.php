@@ -65,6 +65,8 @@
                 <a href="{{ route('password.request') }}" class="text-[13px] text-gray-600 hover:text-black transition-colors underline underline-offset-2">Forgot password?</a>
             </div>
 
+            <input type="hidden" name="redirect" value="{{ old('redirect', request('redirect')) }}">
+
             <button type="submit"
                     class="w-full bg-[#111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase px-8 py-3.5 hover:bg-gray-800 transition-colors">
                 Log In

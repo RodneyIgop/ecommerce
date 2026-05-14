@@ -53,7 +53,7 @@
                             @endforeach
                         </div>
                         @if($wallet)
-                        <p class="text-[11px] text-gray-600 mt-3">Wallet Balance: ${{ number_format($wallet->balance, 2) }}</p>
+                        <p class="text-[11px] text-gray-600 mt-3">Wallet Balance: ₱{{ number_format($wallet->balance, 2) }}</p>
                         @endif
                     </div>
 
@@ -75,26 +75,26 @@
                             <p class="font-medium text-gray-900">{{ $item->product->name }} x{{ $item->quantity }}</p>
                             <p class="text-gray-500 text-[10px]">{{ $item->type }}</p>
                         </div>
-                        <p class="font-medium">${{ number_format($item->unit_price * $item->quantity, 2) }}</p>
+                        <p class="font-medium">₱{{ number_format($item->unit_price * $item->quantity, 2) }}</p>
                     </div>
                     @endforeach
                     <div class="flex justify-between text-[13px] pt-3">
                         <span class="text-gray-600">Subtotal</span>
-                        <span class="font-medium">${{ number_format($cart->total + $cart->discount_total, 2) }}</span>
+                        <span class="font-medium">₱{{ number_format($cart->total + $cart->discount_total, 2) }}</span>
                     </div>
                     @if($cart->discount_total > 0)
                     <div class="flex justify-between text-[13px] pt-1">
                         <span class="text-green-700">Discounts</span>
-                        <span class="font-medium text-green-700">-${{ number_format($cart->discount_total, 2) }}</span>
+                        <span class="font-medium text-green-700">-₱{{ number_format($cart->discount_total, 2) }}</span>
                     </div>
                     @endif
                     <div class="flex justify-between text-[13px] pt-1">
                         <span class="text-gray-600">Shipping</span>
-                        <span class="font-medium">${{ number_format($cart->shipping_total, 2) }}</span>
+                        <span class="font-medium">₱{{ number_format($cart->shipping_total, 2) }}</span>
                     </div>
                     <div class="flex justify-between text-[18px] font-semibold text-gray-900 pt-4 border-t border-[#e8e5e0] mt-4">
                         <span>Total</span>
-                        <span>${{ number_format($cart->total + $cart->shipping_total, 2) }}</span>
+                        <span>₱{{ number_format($cart->total + $cart->shipping_total, 2) }}</span>
                     </div>
                 </div>
             </div>

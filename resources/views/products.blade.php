@@ -3,6 +3,10 @@
 @section('title', 'Products')
 
 @section('content')
+@php
+    $isAuthenticated = auth()->check();
+    $isBusinessUser = auth()->check() && auth()->user()->isBusiness();
+@endphp
 
     <!-- Hero Section -->
     <section class="bg-[#f5f3ef] py-16">
@@ -104,7 +108,7 @@
                                 </p>
 
                                 <!-- Price and Stock -->
-                                <div class="flex items-center justify-between mb-4">
+                                <div class="flex items-center justify-between mb-2">
                                     <span class="text-[18px] font-light text-gray-900">
                                         ₱{{ number_format($product->retail_price, 2) }}
                                     </span>
@@ -112,6 +116,11 @@
                                         {{ $product->stock > 0 ? $product->stock . ' in stock' : 'Out of stock' }}
                                     </span>
                                 </div>
+                                @if($product->is_wholesale_enabled && $product->wholesale_price > 0)
+                                    <p class="text-[12px] text-gray-500 mb-4">
+                                        Wholesale from {{ $product->moq ?? 1 }} pcs — ₱{{ number_format($product->wholesale_price, 2) }} each
+                                    </p>
+                                @endif
 
                                 <!-- Quantity Selector and Actions -->
                                 <div class="space-y-3">
@@ -160,7 +169,7 @@
                                                 </button>
                                             @endif
                                         @else
-                                            <a href="{{ route('login') }}" 
+                                            <a href="{{ route('login', ['redirect' => request()->fullUrl()]) }}" 
                                                class="flex-1 py-2.5 px-4 bg-gray-900 text-white text-[12px] font-semibold uppercase tracking-wider hover:bg-gray-800 transition-colors text-center">
                                                 Login to Buy
                                             </a>
@@ -193,6 +202,11 @@
     let searchTimeout;
     let isLoading = false;
     let searchInput, categoryFilter, clearFiltersBtn, productsGrid;
+    const appState = {
+        isAuthenticated: @json($isAuthenticated),
+        isBusinessUser: @json($isBusinessUser),
+        loginUrl: '{{ route('login', ['redirect' => request()->fullUrl()]) }}'
+    };
 
     document.addEventListener('DOMContentLoaded', function() {
         searchInput = document.getElementById('search-input');
@@ -296,21 +310,30 @@
                     ? `<div class="absolute top-3 left-3 px-3 py-1 bg-orange-500 text-white text-[11px] font-semibold uppercase tracking-wider rounded-full">Low Stock</div>`
                     : '';
 
+        const wholesaleNote = product.is_wholesale_enabled && product.wholesale_price > 0
+            ? `<p class="text-[12px] text-gray-500 mb-4">Wholesale from ${product.moq || 1} pcs — ₱${parseFloat(product.wholesale_price).toFixed(2)} each</p>`
+            : '';
+
         const buttons = product.stock > 0
-            ? `
-                <button onclick="addToCart(${product.id})"
-                    id="add-to-cart-${product.id}"
-                    class="flex-1 py-2.5 px-4 bg-gray-900 text-white text-[12px] font-semibold uppercase tracking-wider hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
-                    </svg>
-                    Add to Cart
-                </button>
-                <button onclick="buyNow(${product.id})"
-                    class="flex-1 py-2.5 px-4 border-2 border-gray-900 text-gray-900 text-[12px] font-semibold uppercase tracking-wider hover:bg-gray-900 hover:text-white transition-colors">
-                    Buy Now
-                </button>
-            `
+            ? appState.isAuthenticated
+                ? `
+                    <button onclick="addToCart(${product.id})"
+                        id="add-to-cart-${product.id}"
+                        class="flex-1 py-2.5 px-4 bg-gray-900 text-white text-[12px] font-semibold uppercase tracking-wider hover:bg-gray-800 transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" />
+                        </svg>
+                        Add to Cart
+                    </button>
+                    <button onclick="buyNow(${product.id})"
+                        class="flex-1 py-2.5 px-4 border-2 border-gray-900 text-gray-900 text-[12px] font-semibold uppercase tracking-wider hover:bg-gray-900 hover:text-white transition-colors">
+                        Buy Now
+                    </button>
+                `
+                : `<a href="${window.location.origin}/login?redirect=${encodeURIComponent(window.location.href)}"
+                        class="flex-1 py-2.5 px-4 bg-gray-900 text-white text-[12px] font-semibold uppercase tracking-wider hover:bg-gray-800 transition-colors text-center">
+                        Login to Buy
+                    </a>`
             : `
                 <button disabled
                     class="flex-1 py-2.5 px-4 bg-gray-300 text-gray-500 text-[12px] font-semibold uppercase tracking-wider cursor-not-allowed">
@@ -334,7 +357,7 @@
                     <p class="text-[13px] text-gray-600 mb-4 line-clamp-2">
                         ${product.description || ''}
                     </p>
-                    <div class="flex items-center justify-between mb-4">
+                    <div class="flex items-center justify-between mb-2">
                         <span class="text-[18px] font-light text-gray-900">
                             ₱${parseFloat(product.retail_price).toFixed(2)}
                         </span>
@@ -342,6 +365,7 @@
                             ${product.stock > 0 ? product.stock + ' in stock' : 'Out of stock'}
                         </span>
                     </div>
+                    ${wholesaleNote}
                     <div class="space-y-3">
                         <div class="flex items-center gap-2">
                             <button onclick="decrementQuantity(${product.id})"
@@ -420,6 +444,8 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
                 body: JSON.stringify({
@@ -430,7 +456,7 @@
 
             const data = await response.json();
 
-            if (data.success) {
+            if (response.ok && data.success) {
 
                 updateCartCount(data.cart_count);
                 showNotification('Added to cart', 'success');
@@ -446,7 +472,7 @@
 
         } finally {
 
-            button.innerHTML = 'Add Cart';
+            button.innerHTML = 'Add to Cart';
             button.disabled = false;
         }
     }
@@ -462,6 +488,8 @@
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
                 body: JSON.stringify({
@@ -472,7 +500,7 @@
 
             const data = await response.json();
 
-            if (data.success) {
+            if (response.ok && data.success) {
 
                 window.location.href = '{{ route('checkout.index') }}';
 

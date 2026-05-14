@@ -146,24 +146,10 @@
                                 </div>
                             </div>
                             <div class="flex gap-3">
-                                @auth
-                                <button class="add-to-cart-btn flex-1 btn-primary text-[10px] py-2.5 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}" 
-                                        data-product-id="{{ $product->id }}"
-                                        data-product-name="{{ $product->name }}"
+                                <button class="flex-1 btn-primary text-[10px] py-2.5 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}" 
                                         {{ $product->stock == 0 ? 'disabled' : '' }}>
-                                    <span class="btn-text">{{ $product->stock == 0 ? 'Out of Stock' : 'Add to Cart' }}</span>
-                                    <span class="btn-loading hidden">
-                                        <svg class="animate-spin h-4 w-4 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                    </span>
+                                    {{ $product->stock == 0 ? 'Out of Stock' : 'Add to Cart' }}
                                 </button>
-                                @else
-                                <a href="{{ route('login') }}" class="flex-1 btn-primary text-[10px] py-2.5 text-center">
-                                    Login to Add
-                                </a>
-                                @endauth
                                 <a href="{{ route('products') }}" 
                                    class="px-4 py-2.5 border border-gray-300 rounded-lg hover:border-gray-900 transition-colors duration-200">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
@@ -206,11 +192,11 @@
                     <form class="space-y-6">
                         <div>
                             <label for="name" class="block text-[12px] font-semibold text-gray-900 mb-2 tracking-[0.12em] uppercase">Your Name</label>
-                            <input type="text" id="name" name="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-gray-900 focus:ring-2 focus:ring-gray-900/20 transition-all duration-200" placeholder="John Doe">
+                            <input type="text" id="name" name="name" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-gray-900 focus:ring-2 focus:ring-gray-900/20 transition-all duration-200" placeholder="Enter Your Name">
                         </div>
                         <div>
                             <label for="email" class="block text-[12px] font-semibold text-gray-900 mb-2 tracking-[0.12em] uppercase">Email Address</label>
-                            <input type="email" id="email" name="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-gray-900 focus:ring-2 focus:ring-gray-900/20 transition-all duration-200" placeholder="john@example.com">
+                            <input type="email" id="email" name="email" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:border-gray-900 focus:ring-2 focus:ring-gray-900/20 transition-all duration-200" placeholder="example@gmail.com">
                         </div>
                         <div>
                             <label for="message" class="block text-[12px] font-semibold text-gray-900 mb-2 tracking-[0.12em] uppercase">Message</label>
@@ -234,7 +220,7 @@
                             </div>
                             <h3 class="text-[18px] font-semibold text-gray-900">Visit Our Store</h3>
                         </div>
-                        <p class="text-[14px] text-gray-600">123 Fashion Street<br>New York, NY 10001<br>United States</p>
+                        <p class="text-[14px] text-gray-600">123 Fashion Street<br>Makati, NY 10001<br>Philippines</p>
                     </div>
 
                     <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
@@ -246,7 +232,7 @@
                             </div>
                             <h3 class="text-[18px] font-semibold text-gray-900">Call Us</h3>
                         </div>
-                        <p class="text-[14px] text-gray-600">+1 (555) 123-4567<br>Mon-Fri: 9am-6pm EST<br>Sat-Sun: 10am-4pm EST</p>
+                        <p class="text-[14px] text-gray-600">09223086018<br>Mon-Fri: 9am-6pm PST<br>Sat-Sun: 10am-4pm PST</p>
                     </div>
 
                     <div class="bg-white p-8 rounded-2xl shadow-sm border border-gray-100">
@@ -324,4 +310,4 @@
         </div>
     </footer>
 
-@endsection
+@endsection 

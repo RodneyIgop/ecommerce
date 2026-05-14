@@ -33,7 +33,8 @@
                         <!-- Product Details -->
                         <div class="flex-1">
                             <h3 class="text-[16px] font-semibold text-gray-900 mb-2">{{ $item->product->name }}</h3>
-                            <p class="text-[14px] text-gray-600 mb-3">{{ $item->product->category->name ?? 'Uncategorized' }}</p>
+                            <p class="text-[14px] text-gray-600 mb-1">{{ $item->product->category->name ?? 'Uncategorized' }}</p>
+                            <p class="text-[12px] uppercase tracking-[0.12em] text-gray-500 mb-3">{{ $item->type === 'wholesale' ? 'Wholesale purchase' : 'Retail purchase' }}</p>
                             
                             <!-- Quantity Selector -->
                             <div class="flex items-center gap-4 mb-3">
@@ -206,6 +207,8 @@
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 },
                 body: JSON.stringify({ quantity: quantity })
@@ -239,6 +242,8 @@
             const response = await fetch(`/cart/items/${itemId}`, {
                 method: 'DELETE',
                 headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 }
             });
@@ -275,6 +280,8 @@
             const response = await fetch('/cart/clear', {
                 method: 'DELETE',
                 headers: {
+                    'Accept': 'application/json',
+                    'X-Requested-With': 'XMLHttpRequest',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                 }
             });
