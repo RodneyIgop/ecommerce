@@ -39,14 +39,5 @@ class RoleUserSeeder extends Seeder
                 'tax_id' => 'TIN-123456789',
             ]
         );
-
-        \App\Models\User::firstOrCreate(
-            ['email' => 'buyer@purefit.com'],
-            [
-                'name' => 'Solo Buyer',
-                'password' => 'password',
-                'role' => \App\Models\User::ROLE_BUYER,
-            ]
-        );
     }
 }

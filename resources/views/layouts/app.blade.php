@@ -5,12 +5,18 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>@yield('title', 'PureFit Apparel') — PureFit Apparel</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
+    <link rel="stylesheet" href="{{ asset('assets/css/style.css') }}">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <style>
         .font-serif-display { font-family: 'Instrument Serif', serif; }
         .font-sans-body { font-family: 'Inter', ui-sans-serif, system-ui, sans-serif; }
+        
+        /* Smooth scrolling */
+        html {
+            scroll-behavior: smooth;
+        }
     </style>
 </head>
 <body class="font-sans-body text-gray-900 antialiased">
@@ -21,9 +27,9 @@
             <div class="flex items-center justify-between h-[70px]">
                 <!-- Left Links -->
                 <div class="hidden md:flex items-center gap-8">
-                    <a href="{{ route('marketplace.index') }}" class="text-[11px] font-medium tracking-[0.12em] uppercase text-gray-800 hover:text-black transition-colors">Marketplace</a>
-                    <a href="{{ route('marketplace.index') }}?wholesale=1" class="text-[11px] font-medium tracking-[0.12em] uppercase text-gray-800 hover:text-black transition-colors">Wholesale</a>
-                    <a href="{{ route('marketplace.index') }}?preorder=1" class="text-[11px] font-medium tracking-[0.12em] uppercase text-gray-800 hover:text-black transition-colors">Preorder</a>
+                    <a href="{{ route('products') }}" class="text-[11px] font-medium tracking-[0.12em] uppercase text-gray-800 hover:text-black transition-colors">Shop</a>
+                    <a href="{{ route('products') }}?collections=1" class="text-[11px] font-medium tracking-[0.12em] uppercase text-gray-800 hover:text-black transition-colors">Collections</a>
+                    <a href="{{ route('home') }}#products" class="text-[11px] font-medium tracking-[0.12em] uppercase text-gray-800 hover:text-black transition-colors">New Arrivals</a>
                 </div>
 
                 <!-- Mobile Menu Button -->
@@ -40,19 +46,11 @@
 
                 <!-- Right Links -->
                 <div class="flex items-center gap-5">
-                    <form action="{{ route('marketplace.index') }}" method="get" class="hidden md:flex items-center">
-                        <input type="text" name="q" placeholder="Search..." class="bg-transparent border-b border-gray-400 text-[12px] py-1 px-0 focus:outline-none focus:border-black w-32 transition-all focus:w-48" value="{{ request('q') }}">
-                        <button type="submit" class="ml-2 text-gray-800 hover:text-black">
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" /></svg>
-                        </button>
-                    </form>
 
                     @auth
-                        <a href="{{ route('wishlist.index') }}" class="text-gray-800 hover:text-black relative">
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" /></svg>
-                        </a>
                         <a href="{{ route('cart.index') }}" class="text-gray-800 hover:text-black relative">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.119 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm7.5 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" /></svg>
+                            <span id="cart-count" class="absolute -top-1 -right-1 w-4 h-4 bg-gray-900 text-white text-[9px] flex items-center justify-center rounded-full hidden">0</span>
                         </a>
                         <a href="{{ route('notifications.index') }}" class="text-gray-800 hover:text-black relative">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="M14.857 17.082a23.848 23.848 0 0 0 5.454-1.31A8.967 8.967 0 0 1 18 9.75V9A6 6 0 0 0 6 9v.75a8.967 8.967 0 0 1-2.312 6.022c1.733.64 3.56 1.085 5.455 1.31m5.714 0a24.255 24.255 0 0 1-5.714 0m5.714 0a3 3 0 1 1-5.714 0" /></svg>
@@ -71,9 +69,8 @@
                                 <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5"><path stroke-linecap="round" stroke-linejoin="round" d="m19.5 8.25-7.5 7.5-7.5-7.5" /></svg>
                             </button>
                             <div class="absolute right-0 top-full mt-2 w-48 bg-white border border-[#e8e5e0] shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
-                                <a href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : (auth()->user()->role === 'business' ? route('business.dashboard') : route('buyer.dashboard')) }}" class="block px-4 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-gray-800 hover:bg-[#f5f3ef]">Dashboard</a>
+                                <a href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : route('business.dashboard') }}" class="block px-4 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-gray-800 hover:bg-[#f5f3ef]">Dashboard</a>
                                 <a href="{{ route('orders.index') }}" class="block px-4 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-gray-800 hover:bg-[#f5f3ef]">Orders</a>
-                                <a href="{{ route('wallet.index') }}" class="block px-4 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-gray-800 hover:bg-[#f5f3ef]">Wallet</a>
                                 <form method="POST" action="{{ route('logout') }}" class="block">
                                     @csrf
                                     <button type="submit" class="w-full text-left px-4 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-red-600 hover:bg-[#f5f3ef]">Logout</button>
@@ -97,6 +94,120 @@
     </nav>
 
     @yield('content')
+
+    @stack('scripts')
+
+    <!-- Cart JavaScript -->
+    <script>
+        // Update cart count on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            @auth
+            updateCartCount();
+            @endauth
+            setupAddToCartButtons();
+        });
+
+        // Update cart count badge
+        async function updateCartCount() {
+            try {
+                const response = await fetch('{{ route('cart.count') }}');
+                const data = await response.json();
+                
+                const cartCountEl = document.getElementById('cart-count');
+                if (data.count > 0) {
+                    cartCountEl.textContent = data.count;
+                    cartCountEl.classList.remove('hidden');
+                } else {
+                    cartCountEl.classList.add('hidden');
+                }
+            } catch (error) {
+                console.error('Error updating cart count:', error);
+            }
+        }
+
+        // Setup add to cart buttons
+        function setupAddToCartButtons() {
+            const buttons = document.querySelectorAll('.add-to-cart-btn');
+            
+            buttons.forEach(button => {
+                button.addEventListener('click', async function(e) {
+                    e.preventDefault();
+                    
+                    if (this.disabled) return;
+                    
+                    const productId = this.dataset.productId;
+                    const productName = this.dataset.productName;
+                    const btnText = this.querySelector('.btn-text');
+                    const btnLoading = this.querySelector('.btn-loading');
+                    
+                    // Show loading state
+                    btnText.classList.add('hidden');
+                    btnLoading.classList.remove('hidden');
+                    this.disabled = true;
+                    
+                    try {
+                        const response = await fetch('{{ route('cart.add') }}', {
+                            method: 'POST',
+                            headers: {
+                                'Content-Type': 'application/json',
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+                            },
+                            body: JSON.stringify({
+                                product_id: productId,
+                                quantity: 1
+                            })
+                        });
+                        
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            // Update cart count
+                            const cartCountEl = document.getElementById('cart-count');
+                            cartCountEl.textContent = data.cart_count;
+                            cartCountEl.classList.remove('hidden');
+                            
+                            // Show success message
+                            showNotification(data.message, 'success');
+                        } else {
+                            showNotification(data.message, 'error');
+                        }
+                    } catch (error) {
+                        console.error('Error adding to cart:', error);
+                        showNotification('Error adding item to cart', 'error');
+                    } finally {
+                        // Reset button state
+                        btnText.classList.remove('hidden');
+                        btnLoading.classList.add('hidden');
+                        this.disabled = false;
+                    }
+                });
+            });
+        }
+
+        // Show notification
+        function showNotification(message, type = 'success') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full ${
+                type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
+            }`;
+            notification.textContent = message;
+            
+            document.body.appendChild(notification);
+            
+            // Animate in
+            setTimeout(() => {
+                notification.classList.remove('translate-x-full');
+            }, 10);
+            
+            // Remove after 3 seconds
+            setTimeout(() => {
+                notification.classList.add('translate-x-full');
+                setTimeout(() => {
+                    notification.remove();
+                }, 300);
+            }, 3000);
+        }
+    </script>
 
 </body>
 </html>

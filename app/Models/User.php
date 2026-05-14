@@ -87,11 +87,6 @@ class User extends Authenticatable
         return $this->hasOne(\App\Models\Cart::class);
     }
 
-    public function wallet()
-    {
-        return $this->hasOne(\App\Models\Wallet::class);
-    }
-
     public function reviews()
     {
         return $this->hasMany(\App\Models\Review::class);

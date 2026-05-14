@@ -45,16 +45,13 @@
                     <div class="bg-white border border-[#e8e5e0] p-6">
                         <h2 class="text-[11px] font-semibold tracking-[0.15em] uppercase text-gray-900 mb-5">Payment Method</h2>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            @foreach(['stripe'=>'Credit Card','paypal'=>'PayPal','bank_transfer'=>'Bank Transfer','cod'=>'Cash on Delivery','wallet'=>'Wallet'] as $value=>$label)
+                            @foreach(['stripe'=>'Credit Card','paypal'=>'PayPal','bank_transfer'=>'Bank Transfer','cod'=>'Cash on Delivery'] as $value=>$label)
                             <label class="cursor-pointer border border-[#e8e5e0] p-3 hover:border-black transition-colors has-[:checked]:border-black has-[:checked]:bg-[#f5f3ef]">
                                 <input type="radio" name="payment_method" value="{{ $value }}" class="hidden" {{ $loop->first ? 'checked' : '' }}>
                                 <span class="text-[11px] font-medium">{{ $label }}</span>
                             </label>
                             @endforeach
                         </div>
-                        @if($wallet)
-                        <p class="text-[11px] text-gray-600 mt-3">Wallet Balance: ${{ number_format($wallet->balance, 2) }}</p>
-                        @endif
                     </div>
 
                     <div class="bg-white border border-[#e8e5e0] p-6">
@@ -102,7 +99,7 @@
         @else
         <div class="bg-white border border-[#e8e5e0] p-16 text-center">
             <p class="text-[13px] text-gray-600 mb-6">Your cart is empty.</p>
-            <a href="{{ route('marketplace.index') }}" class="inline-block bg-[#111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase py-3 px-8 hover:bg-gray-800 transition-colors">Continue Shopping</a>
+            <a href="{{ route('products') }}" class="inline-block bg-[#111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase py-3 px-8 hover:bg-gray-800 transition-colors">Continue Shopping</a>
         </div>
         @endif
     </div>
