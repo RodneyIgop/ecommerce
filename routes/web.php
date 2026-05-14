@@ -3,6 +3,9 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\LoginController;
+use App\Http\Controllers\Auth\RegisterController;
+use App\Http\Controllers\Auth\ForgotPasswordController;
+use App\Http\Controllers\Auth\ResetPasswordController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Business\BusinessController;
 use App\Http\Controllers\Buyer\BuyerController;
@@ -26,6 +29,15 @@ Route::get('/products', [ProductController::class, 'index'])->name('products');
 
 Route::get('/login', [LoginController::class, 'show'])->name('login');
 Route::post('/login', [LoginController::class, 'handle']);
+
+Route::get('/register', [RegisterController::class, 'show'])->name('register');
+Route::post('/register', [RegisterController::class, 'handle']);
+
+Route::get('/forgot-password', [ForgotPasswordController::class, 'show'])->name('password.request');
+Route::post('/forgot-password', [ForgotPasswordController::class, 'handle'])->name('password.email');
+
+Route::get('/reset-password/{token}', [ResetPasswordController::class, 'show'])->name('password.reset');
+Route::post('/reset-password', [ResetPasswordController::class, 'handle'])->name('password.update');
 
 Route::post('/logout', function () {
     Auth::logout();
