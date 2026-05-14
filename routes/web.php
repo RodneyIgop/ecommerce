@@ -15,7 +15,6 @@ use App\Http\Controllers\OrderController;
 use App\Http\Controllers\PreorderController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\AnalyticsController;
-use App\Http\Controllers\WalletController;
 use App\Http\Controllers\ShippingController;
 use App\Http\Controllers\LandingPageController;
 
@@ -71,9 +70,6 @@ Route::middleware('auth')->group(function () {
     Route::patch('/notifications/{notification}/read', [NotificationController::class, 'markAsRead'])->name('notifications.read');
     Route::patch('/notifications/read-all', [NotificationController::class, 'markAllAsRead'])->name('notifications.read_all');
     Route::get('/notifications/unread-count', [NotificationController::class, 'unreadCount'])->name('notifications.count');
-
-    Route::get('/wallet', [WalletController::class, 'index'])->name('wallet.index');
-    Route::post('/wallet/deposit', [WalletController::class, 'deposit'])->name('wallet.deposit');
 });
 
 Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
