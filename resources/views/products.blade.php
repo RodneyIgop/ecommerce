@@ -432,8 +432,16 @@
     // Add To Cart
     async function addToCart(productId) {
 
-        const quantity = document.getElementById(`quantity-${productId}`).value;
+        const quantity = document.getElementById(`quantity-${productId}`);
         const button = document.getElementById(`add-to-cart-${productId}`);
+
+        if (!quantity || !button) {
+            showNotification('Product not found', 'error');
+            return;
+        }
+
+        const qty = parseInt(quantity.value);
+        const originalContent = button.innerHTML;
 
         button.innerHTML = 'Adding...';
         button.disabled = true;
@@ -450,7 +458,7 @@
                 },
                 body: JSON.stringify({
                     product_id: productId,
-                    quantity
+                    quantity: qty
                 })
             });
 
@@ -472,7 +480,11 @@
 
         } finally {
 
+<<<<<<< HEAD
             button.innerHTML = 'Add to Cart';
+=======
+            button.innerHTML = originalContent;
+>>>>>>> remove-wallet
             button.disabled = false;
         }
     }
@@ -480,7 +492,14 @@
     // Buy Now
     async function buyNow(productId) {
 
-        const quantity = document.getElementById(`quantity-${productId}`).value;
+        const quantity = document.getElementById(`quantity-${productId}`);
+
+        if (!quantity) {
+            showNotification('Product not found', 'error');
+            return;
+        }
+
+        const qty = parseInt(quantity.value);
 
         try {
 
@@ -494,7 +513,7 @@
                 },
                 body: JSON.stringify({
                     product_id: productId,
-                    quantity
+                    quantity: qty
                 })
             });
 
