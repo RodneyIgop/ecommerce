@@ -14,10 +14,13 @@ use App\Models\ProductVariant;
 use App\Models\InventoryLog;
 use App\Models\PreorderQueue;
 use App\Models\Notification;
+use App\Models\BusinessProfile;
 use App\Services\InventoryManager;
 use App\Services\NotificationService;
 use App\Services\OrderStateMachine;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class BusinessController extends Controller
 {
@@ -581,5 +584,69 @@ class BusinessController extends Controller
         ]);
 
         return back()->with('success', 'Variant created.');
+    }
+
+    public function profile()
+    {
+        $business = auth()->user()->businessProfile;
+        return view('business.profile', compact('business'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $business = auth()->user()->businessProfile;
+
+        $validated = $request->validate([
+            'business_name' => 'required|string|max:255',
+            'business_address' => 'nullable|string|max:255',
+            'business_phone' => 'nullable|string|max:20',
+            'tax_id' => 'nullable|string|max:50',
+            'logo' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,webp',
+        ]);
+
+        $updateData = [
+            'business_name' => $validated['business_name'],
+            'business_address' => $validated['business_address'] ?? null,
+            'business_phone' => $validated['business_phone'] ?? null,
+            'tax_id' => $validated['tax_id'] ?? null,
+        ];
+
+        if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
+            // Delete old logo if exists
+            if ($business->logo && Storage::disk('public')->exists($business->logo)) {
+                Storage::disk('public')->delete($business->logo);
+            }
+            $logoPath = $request->file('logo')->store('business-logos', 'public');
+            $updateData['logo'] = $logoPath;
+        }
+
+        $business->update($updateData);
+
+        return back()->with('success', 'Business profile updated successfully.');
+    }
+
+    public function settings()
+    {
+        $user = auth()->user();
+        return view('business.settings', compact('user'));
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = auth()->user();
+
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return back()->with('error', 'Current password is incorrect.');
+        }
+
+        $user->password = Hash::make($validated['password']);
+        $user->save();
+
+        return back()->with('success', 'Password updated successfully.');
     }
 }

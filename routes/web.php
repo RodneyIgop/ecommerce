@@ -100,6 +100,10 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
 
 Route::middleware(['auth', 'business'])->prefix('business')->group(function () {
     Route::get('/dashboard', [BusinessController::class, 'index'])->name('business.dashboard');
+    Route::get('/profile', [BusinessController::class, 'profile'])->name('business.profile');
+    Route::post('/profile', [BusinessController::class, 'updateProfile'])->name('business.profile.update');
+    Route::get('/settings', [BusinessController::class, 'settings'])->name('business.settings');
+    Route::post('/settings/password', [BusinessController::class, 'updatePassword'])->name('business.settings.password');
     Route::get('/products', [BusinessController::class, 'products'])->name('business.products');
     Route::get('/products/filter', [BusinessController::class, 'filterProducts'])->name('business.products.filter');
     Route::post('/products', [BusinessController::class, 'storeProduct'])->name('business.products.store');
