@@ -23,7 +23,7 @@
         </div>
         <div class="bg-white border border-[#e8e5e0] px-6 py-5">
             <p class="text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-500 mb-1">Solo Buyers</p>
-            <p class="text-[28px] font-light text-gray-900">{{ $totalBuyers }}</p>
+            
         </div>
         <div class="bg-white border border-[#e8e5e0] px-6 py-5">
             <p class="text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-500 mb-1">Products Listed</p>

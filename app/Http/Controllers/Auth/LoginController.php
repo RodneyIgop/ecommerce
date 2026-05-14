@@ -35,7 +35,7 @@ class LoginController extends Controller
             }
 
             if ($user->isBuyer()) {
-                return redirect()->route('buyer.dashboard');
+                return redirect()->route('home');
             }
 
             return redirect()->intended('/');
