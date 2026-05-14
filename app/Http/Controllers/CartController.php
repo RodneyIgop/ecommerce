@@ -6,15 +6,13 @@ use Illuminate\Http\Request;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
-use App\Services\DiscountEngine;
-use App\Services\ShippingCalculator;
 
 class CartController extends Controller
 {
     public function index()
     {
         $cart = $this->getOrCreateCart();
-        $cart->load('items.product.business.businessProfile', 'items.variant');
+        $cart->load('items.product.category');
         $cart->recalculate();
 
         return view('cart.index', compact('cart'));
@@ -24,96 +22,108 @@ class CartController extends Controller
     {
         $request->validate([
             'product_id' => 'required|exists:products,id',
-            'variant_id' => 'nullable|exists:product_variants,id',
-            'quantity' => 'required|integer|min:1',
-            'type' => 'required|in:retail,wholesale',
+            'quantity' => 'required|integer|min:1|max:99',
         ]);
 
         $product = Product::findOrFail($request->product_id);
         $quantity = (int) $request->quantity;
-        $type = $request->type;
 
-        if ($type === 'wholesale' && !$product->is_wholesale_enabled) {
-            return back()->with('error', 'Wholesale not available for this product.');
-        }
-
-        if (!DiscountEngine::validateMoq($product, $quantity, $type)) {
-            return back()->with('error', 'Minimum order quantity not met. MOQ: ' . $product->moq);
-        }
-
-        $available = $product->getAvailableStock();
-        if ($available < $quantity) {
-            if ($product->is_preorder) {
-                return redirect()->route('preorder.create', ['product' => $product->id])
-                    ->with('info', 'Item is available for preorder.');
+        // Check if product is in stock
+        if ($product->stock < $quantity) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Insufficient stock. Available: ' . $product->stock
+                ], 400);
             }
-            return back()->with('error', 'Insufficient stock. Available: ' . $available);
+            return back()->with('error', 'Insufficient stock. Available: ' . $product->stock);
         }
-
-        $calc = DiscountEngine::calculate($product, $quantity, $type);
-        $shipping = ShippingCalculator::calculateForProduct($product, $product->weight ?? 0.5);
 
         $cart = $this->getOrCreateCart();
-        $cart->type = $type;
-        $cart->save();
 
+        // Check if product already exists in cart
         $existing = CartItem::where('cart_id', $cart->id)
             ->where('product_id', $product->id)
-            ->where('variant_id', $request->variant_id)
             ->first();
 
         if ($existing) {
-            $newQty = $existing->quantity + $quantity;
-            $newCalc = DiscountEngine::calculate($product, $newQty, $type);
+            // Update quantity instead of creating new entry
+            $newQuantity = $existing->quantity + $quantity;
+            
+            if ($product->stock < $newQuantity) {
+                if ($request->expectsJson()) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Insufficient stock. Available: ' . $product->stock
+                    ], 400);
+                }
+                return back()->with('error', 'Insufficient stock. Available: ' . $product->stock);
+            }
+
             $existing->update([
-                'quantity' => $newQty,
-                'unit_price' => $newCalc['unit_price'],
-                'discount_amount' => $newCalc['discount_amount'],
-                'shipping_estimate' => ShippingCalculator::calculateForProduct($product, ($product->weight ?? 0.5) * $newQty),
+                'quantity' => $newQuantity,
+                'unit_price' => $product->retail_price,
             ]);
         } else {
+            // Create new cart item
             CartItem::create([
                 'cart_id' => $cart->id,
                 'product_id' => $product->id,
-                'variant_id' => $request->variant_id,
                 'quantity' => $quantity,
-                'unit_price' => $calc['unit_price'],
-                'discount_amount' => $calc['discount_amount'],
-                'shipping_estimate' => $shipping,
-                'type' => $type,
+                'unit_price' => $product->retail_price,
+                'discount_amount' => 0,
+                'shipping_estimate' => 0,
+                'type' => 'retail',
             ]);
         }
 
         $cart->recalculate();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Added to cart successfully',
+                'cart_count' => $cart->items->sum('quantity'),
+                'cart_total' => number_format($cart->total, 2)
+            ]);
+        }
 
         return back()->with('success', 'Added to cart.');
     }
 
     public function update(Request $request, CartItem $item)
     {
-        $request->validate(['quantity' => 'required|integer|min:1']);
+        $request->validate(['quantity' => 'required|integer|min:1|max:99']);
 
         $product = $item->product;
         $quantity = (int) $request->quantity;
 
-        if (!DiscountEngine::validateMoq($product, $quantity, $item->type)) {
-            return back()->with('error', 'MOQ not met.');
+        if ($product->stock < $quantity) {
+            if ($request->expectsJson()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Insufficient stock. Available: ' . $product->stock
+                ], 400);
+            }
+            return back()->with('error', 'Insufficient stock. Available: ' . $product->stock);
         }
 
-        $available = $product->getAvailableStock();
-        if ($available < $quantity) {
-            return back()->with('error', 'Insufficient stock.');
-        }
-
-        $calc = DiscountEngine::calculate($product, $quantity, $item->type);
         $item->update([
             'quantity' => $quantity,
-            'unit_price' => $calc['unit_price'],
-            'discount_amount' => $calc['discount_amount'],
-            'shipping_estimate' => ShippingCalculator::calculateForProduct($product, ($product->weight ?? 0.5) * $quantity),
+            'unit_price' => $product->retail_price,
         ]);
 
         $item->cart->recalculate();
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart updated successfully',
+                'cart_count' => $item->cart->items->sum('quantity'),
+                'cart_total' => number_format($item->cart->total, 2),
+                'item_total' => number_format($item->quantity * $item->unit_price, 2)
+            ]);
+        }
 
         return back()->with('success', 'Cart updated.');
     }
@@ -124,6 +134,15 @@ class CartController extends Controller
         $item->delete();
         $cart->recalculate();
 
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Item removed from cart',
+                'cart_count' => $cart->items->sum('quantity'),
+                'cart_total' => number_format($cart->total, 2)
+            ]);
+        }
+
         return back()->with('success', 'Item removed from cart.');
     }
 
@@ -133,7 +152,24 @@ class CartController extends Controller
         $cart->items()->delete();
         $cart->recalculate();
 
+        if (request()->expectsJson()) {
+            return response()->json([
+                'success' => true,
+                'message' => 'Cart cleared',
+                'cart_count' => 0,
+                'cart_total' => '0.00'
+            ]);
+        }
+
         return back()->with('success', 'Cart cleared.');
+    }
+
+    public function getCount()
+    {
+        $cart = $this->getOrCreateCart();
+        return response()->json([
+            'count' => $cart->items->sum('quantity')
+        ]);
     }
 
     private function getOrCreateCart(): Cart

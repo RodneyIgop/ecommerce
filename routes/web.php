@@ -5,7 +5,6 @@ use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Business\BusinessController;
-use App\Http\Controllers\Buyer\BuyerController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\CartController;
 use App\Http\Controllers\CheckoutController;
@@ -40,6 +39,7 @@ Route::middleware('auth')->group(function () {
     Route::patch('/cart/items/{item}', [CartController::class, 'update'])->name('cart.update');
     Route::delete('/cart/items/{item}', [CartController::class, 'remove'])->name('cart.remove');
     Route::delete('/cart/clear', [CartController::class, 'clear'])->name('cart.clear');
+    Route::get('/cart/count', [CartController::class, 'getCount'])->name('cart.count');
 
     Route::get('/checkout', [CheckoutController::class, 'index'])->name('checkout.index');
     Route::post('/checkout', [CheckoutController::class, 'store'])->name('checkout.store');
@@ -117,9 +117,3 @@ Route::middleware(['auth', 'business'])->prefix('business')->group(function () {
     Route::post('/shipments/{shipment}/timeline', [ShippingController::class, 'addTimeline'])->name('business.shipments.timeline');
 });
 
-Route::middleware(['auth', 'buyer'])->prefix('buyer')->group(function () {
-    Route::get('/dashboard', [BuyerController::class, 'index'])->name('buyer.dashboard');
-    Route::get('/orders', [BuyerController::class, 'orders'])->name('buyer.orders');
-    Route::get('/wishlist', [BuyerController::class, 'wishlist'])->name('buyer.wishlist');
-    Route::get('/notifications', [BuyerController::class, 'notifications'])->name('buyer.notifications');
-});
