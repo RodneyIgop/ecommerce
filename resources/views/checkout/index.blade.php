@@ -52,12 +52,6 @@
                             </label>
                             @endforeach
                         </div>
-<<<<<<< HEAD
-                        @if($wallet)
-                        <p class="text-[11px] text-gray-600 mt-3">Wallet Balance: ₱{{ number_format($wallet->balance, 2) }}</p>
-                        @endif
-=======
->>>>>>> remove-wallet
                     </div>
 
                     <div class="bg-white border border-[#e8e5e0] p-6">
