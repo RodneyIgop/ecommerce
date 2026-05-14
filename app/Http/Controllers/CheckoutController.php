@@ -9,7 +9,6 @@ use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Shipment;
 use App\Models\Payment;
-use App\Models\Wallet;
 use App\Models\Product;
 use App\Services\DiscountEngine;
 use App\Services\ShippingCalculator;
@@ -32,9 +31,7 @@ class CheckoutController extends Controller
 
         $cart->recalculate();
 
-        $wallet = Wallet::where('user_id', auth()->id())->first();
-
-        return view('checkout.index', compact('cart', 'wallet'));
+        return view('checkout.index', compact('cart'));
     }
 
     public function store(Request $request)
@@ -47,7 +44,7 @@ class CheckoutController extends Controller
             'shipping_address.postal' => 'required|string',
             'shipping_address.country' => 'required|string',
             'billing_address' => 'nullable|array',
-            'payment_method' => 'required|in:stripe,paypal,bank_transfer,cod,wallet',
+            'payment_method' => 'required|in:stripe,paypal,bank_transfer,cod',
             'notes' => 'nullable|string',
         ]);
 
@@ -133,13 +130,7 @@ class CheckoutController extends Controller
 
                 $orders[] = $order;
 
-                if ($validated['payment_method'] === 'wallet') {
-                    $wallet = Wallet::where('user_id', auth()->id())->first();
-                    $payment = PaymentProcessor::processWalletPayment($order, $wallet, $total);
-                    if (!$payment) {
-                        throw new \Exception('Insufficient wallet balance.');
-                    }
-                } elseif (in_array($validated['payment_method'], ['cod', 'bank_transfer'])) {
+                if (in_array($validated['payment_method'], ['cod', 'bank_transfer'])) {
                     Payment::create([
                         'order_id' => $order->id,
                         'user_id' => auth()->id(),
@@ -184,21 +175,13 @@ class CheckoutController extends Controller
 
         $request->validate([
             'amount' => 'required|numeric|min:0.01',
-            'method' => 'required|in:stripe,paypal,bank_transfer,wallet',
+            'method' => 'required|in:stripe,paypal,bank_transfer',
         ]);
 
         $amount = (float) $request->amount;
         $method = $request->method;
 
-        if ($method === 'wallet') {
-            $wallet = Wallet::where('user_id', auth()->id())->first();
-            $payment = PaymentProcessor::processWalletPayment($order, $wallet, $amount);
-            if (!$payment) {
-                return back()->with('error', 'Insufficient wallet balance.');
-            }
-        } else {
-            PaymentProcessor::process($order, $method, $amount);
-        }
+        PaymentProcessor::process($order, $method, $amount);
 
         NotificationService::notifyPaymentConfirmation(auth()->user(), $order->id, $amount);
 

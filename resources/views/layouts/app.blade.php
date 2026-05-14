@@ -71,7 +71,6 @@
                             <div class="absolute right-0 top-full mt-2 w-48 bg-white border border-[#e8e5e0] shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50">
                                 <a href="{{ auth()->user()->role === 'admin' ? route('admin.dashboard') : route('business.dashboard') }}" class="block px-4 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-gray-800 hover:bg-[#f5f3ef]">Dashboard</a>
                                 <a href="{{ route('orders.index') }}" class="block px-4 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-gray-800 hover:bg-[#f5f3ef]">Orders</a>
-                                <a href="{{ route('wallet.index') }}" class="block px-4 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-gray-800 hover:bg-[#f5f3ef]">Wallet</a>
                                 <form method="POST" action="{{ route('logout') }}" class="block">
                                     @csrf
                                     <button type="submit" class="w-full text-left px-4 py-3 text-[11px] font-medium tracking-[0.1em] uppercase text-red-600 hover:bg-[#f5f3ef]">Logout</button>
