@@ -146,9 +146,17 @@
                                 </div>
                             </div>
                             <div class="flex gap-3">
-                                <button class="flex-1 btn-primary text-[10px] py-2.5 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}" 
+                                <button class="add-to-cart-btn flex-1 btn-primary text-[10px] py-2.5 {{ $product->stock == 0 ? 'opacity-50 cursor-not-allowed' : '' }}" 
+                                        data-product-id="{{ $product->id }}"
+                                        data-product-name="{{ $product->name }}"
                                         {{ $product->stock == 0 ? 'disabled' : '' }}>
-                                    {{ $product->stock == 0 ? 'Out of Stock' : 'Add to Cart' }}
+                                    <span class="btn-text">{{ $product->stock == 0 ? 'Out of Stock' : 'Add to Cart' }}</span>
+                                    <span class="btn-loading hidden">
+                                        <svg class="animate-spin h-4 w-4 mx-auto" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </span>
                                 </button>
                                 <a href="{{ route('products') }}" 
                                    class="px-4 py-2.5 border border-gray-300 rounded-lg hover:border-gray-900 transition-colors duration-200">

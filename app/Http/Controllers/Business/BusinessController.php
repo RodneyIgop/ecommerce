@@ -297,8 +297,20 @@ class BusinessController extends Controller
 
     public function orders()
     {
-        $retailOrders = collect();
-        $b2bOrders = collect();
+        $businessId = auth()->id();
+
+        $retailOrders = Order::where('business_id', $businessId)
+            ->where('type', 'retail')
+            ->with('buyer', 'items.product')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $b2bOrders = Order::where('business_id', $businessId)
+            ->where('type', 'b2b')
+            ->with('buyer', 'items.product')
+            ->orderByDesc('created_at')
+            ->get();
+
         return view('business.orders', compact('retailOrders', 'b2bOrders'));
     }
 

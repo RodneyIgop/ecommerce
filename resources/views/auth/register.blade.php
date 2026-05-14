@@ -58,6 +58,25 @@
             </div>
 
             <div>
+                <label class="block text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-700 mb-3">Account Type</label>
+                <div class="space-y-3">
+                    <label class="flex items-center p-3 bg-white border border-[#ddd8d0] rounded cursor-pointer hover:border-[#111] transition-colors">
+                        <input type="radio" name="account_type" value="personal" checked
+                               class="w-4 h-4 border-gray-300 accent-[#111]">
+                        <span class="ml-3 text-[14px] text-gray-900">Personal Use (Buyer)</span>
+                    </label>
+                    <label class="flex items-center p-3 bg-white border border-[#ddd8d0] rounded cursor-pointer hover:border-[#111] transition-colors">
+                        <input type="radio" name="account_type" value="business"
+                               class="w-4 h-4 border-gray-300 accent-[#111]">
+                        <span class="ml-3 text-[14px] text-gray-900">Business Use (Seller)</span>
+                    </label>
+                </div>
+                @error('account_type')
+                    <p class="mt-2 text-[12px] text-red-600">{{ $message }}</p>
+                @enderror
+            </div>
+
+            <div>
                 <label for="password" class="block text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-700 mb-2">Password</label>
                 <input type="password" id="password" name="password" required
                        class="w-full bg-white border border-[#ddd8d0] px-4 py-3 text-[14px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#111] transition-colors"

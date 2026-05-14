@@ -21,19 +21,26 @@ class RegisterController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'unique:users,email'],
             'password' => ['required', 'confirmed', 'min:8'],
+            'account_type' => ['required', 'in:personal,business'],
         ]);
+
+        $role = $data['account_type'] === 'business' ? User::ROLE_BUSINESS : User::ROLE_BUYER;
 
         $user = User::create([
             'name' => $data['name'],
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
-            'role' => User::ROLE_BUYER,
+            'role' => $role,
             'status' => 'active',
         ]);
 
         Auth::login($user);
         $request->session()->regenerate();
 
-        return redirect()->route('buyer.dashboard');
+        if ($user->isBusiness()) {
+            return redirect()->route('business.dashboard');
+        }
+
+        return redirect()->route('home');
     }
 }
