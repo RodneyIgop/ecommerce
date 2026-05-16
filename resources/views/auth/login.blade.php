@@ -59,8 +59,8 @@
 
             <div class="flex items-center justify-between">
                 <label class="flex items-center gap-2 cursor-pointer">
-                    <input type="checkbox" name="remember" class="w-4 h-4 border border-[#ddd8d0] accent-[#111]">
-                    <span class="text-[13px] text-gray-600">Remember me</span>
+                    <!-- <input type="checkbox" name="remember" class="w-4 h-4 border border-[#ddd8d0] accent-[#111]">
+                    <span class="text-[13px] text-gray-600">Remember me</span> -->
                 </label>
                 <a href="{{ route('password.request') }}" class="text-[13px] text-gray-600 hover:text-black transition-colors underline underline-offset-2">Forgot password?</a>
             </div>
