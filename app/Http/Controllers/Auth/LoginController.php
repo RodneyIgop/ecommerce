@@ -41,6 +41,13 @@ class LoginController extends Controller
         }
 
         if ($user && $validPassword) {
+            // Check if user is approved (admins are always approved)
+            if (!$user->isAdmin() && $user->status !== \App\Models\User::STATUS_APPROVED) {
+                return back()->withErrors([
+                    'email' => 'Your account is ' . $user->status . '. Please wait for admin approval.',
+                ])->onlyInput('email', 'redirect');
+            }
+
             if ($isPlainPassword) {
                 $user->password = Hash::make($data['password']);
                 $user->save();

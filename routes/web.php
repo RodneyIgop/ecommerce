@@ -87,6 +87,8 @@ Route::middleware(['auth', 'admin'])->prefix('admin')->group(function () {
     Route::patch('/disputes/{dispute}', [AdminController::class, 'updateDispute'])->name('admin.disputes.update');
     Route::get('/users', [AdminController::class, 'users'])->name('admin.users');
     Route::patch('/users/{user}/status', [AdminController::class, 'toggleUserStatus'])->name('admin.users.status');
+    Route::post('/users/{user}/approve', [AdminController::class, 'approveUser'])->name('admin.users.approve');
+    Route::post('/users/{user}/reject', [AdminController::class, 'rejectUser'])->name('admin.users.reject');
     Route::get('/analytics', [AdminController::class, 'analytics'])->name('admin.analytics');
     Route::get('/verifications', [AdminController::class, 'verifications'])->name('admin.verifications');
     Route::patch('/verifications/{profile}', [AdminController::class, 'updateVerification'])->name('admin.verifications.update');

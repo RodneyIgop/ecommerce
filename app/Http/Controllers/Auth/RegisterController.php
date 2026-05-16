@@ -31,16 +31,9 @@ class RegisterController extends Controller
             'email' => $data['email'],
             'password' => Hash::make($data['password']),
             'role' => $role,
-            'status' => 'active',
+            'status' => User::STATUS_PENDING,
         ]);
 
-        Auth::login($user);
-        $request->session()->regenerate();
-
-        if ($user->isBusiness()) {
-            return redirect()->route('business.dashboard');
-        }
-
-        return redirect()->route('home');
+        return redirect()->route('login')->with('success', 'Account created successfully. Please wait for admin approval.');
     }
 }

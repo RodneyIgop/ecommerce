@@ -147,7 +147,7 @@ class AdminController extends Controller
 
     public function users()
     {
-        $businesses = User::where('role', User::ROLE_BUSINESS)
+        $businesses = User::where('role', '!=', User::ROLE_ADMIN)
             ->with('businessProfile')
             ->orderBy('created_at', 'desc')
             ->get();
@@ -159,6 +159,18 @@ class AdminController extends Controller
     {
         $user->update(['status' => $request->status]);
         return back()->with('success', 'User status updated.');
+    }
+
+    public function approveUser(User $user)
+    {
+        $user->update(['status' => User::STATUS_APPROVED]);
+        return back()->with('success', 'User account approved successfully.');
+    }
+
+    public function rejectUser(User $user)
+    {
+        $user->update(['status' => User::STATUS_REJECTED]);
+        return back()->with('success', 'User account rejected.');
     }
 
     public function analytics()
