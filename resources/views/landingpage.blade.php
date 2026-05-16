@@ -129,8 +129,14 @@
                             </div>
                         </div>
                         <div class="p-6">
+                            <!-- Category & Gender -->
+                            <div class="flex items-center gap-2 mb-2">
+                                <span class="text-[12px] text-gray-600">{{ $product->category->name ?? 'Uncategorized' }}</span>
+                                <span class="inline-flex px-2 py-0.5 text-[10px] font-semibold tracking-wider uppercase rounded-full {{ $product->gender == 'men' ? 'bg-blue-100 text-blue-800' : ($product->gender == 'women' ? 'bg-pink-100 text-pink-800' : 'bg-gray-100 text-gray-800') }}">
+                                    {{ ucfirst($product->gender) }}
+                                </span>
+                            </div>
                             <h3 class="text-[16px] font-semibold text-gray-900 mb-2 line-clamp-2">{{ $product->name }}</h3>
-                            <p class="text-[14px] text-gray-600 mb-4">{{ $product->category->name ?? 'Uncategorized' }}</p>
                             <div class="flex items-center justify-between mb-4">
                                 <div class="flex items-center gap-2">
                                     <span class="text-[20px] font-bold text-gray-900">₱{{ number_format($product->retail_price, 2) }}</span>
@@ -158,8 +164,8 @@
                                         </svg>
                                     </span>
                                 </button>
-                                <a href="{{ route('products') }}" 
-                                   class="px-4 py-2.5 border border-gray-300 rounded-lg hover:border-gray-900 transition-colors duration-200">
+                                <a href="{{ route('products.show', $product) }}"
+                                   class="w-10 h-10 p-3 border border-gray-300 rounded-lg hover:border-gray-900 transition-colors duration-200 inline-flex items-center justify-center">
                                     <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2">
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                         <path stroke-linecap="round" stroke-linejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />

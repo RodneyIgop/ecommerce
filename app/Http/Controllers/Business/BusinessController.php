@@ -119,20 +119,25 @@ class BusinessController extends Controller
         $query = Product::where('business_id', $businessId)
             ->whereIn('status', ['active', 'flagged'])
             ->with('category');
-            
+
         // Filter by category if selected
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
-        
+
+        // Filter by gender if selected
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+
         $products = $query->latest()->get();
         $categories = Category::all();
-        
+
         // If AJAX request, return only the products grid
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return view('business.products_grid', compact('products'))->render();
         }
-        
+
         return view('business.products', compact('products', 'categories'));
     }
 

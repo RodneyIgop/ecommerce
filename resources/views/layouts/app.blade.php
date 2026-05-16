@@ -20,7 +20,7 @@
         }
     </style>
 </head>
-<body class="font-sans-body text-gray-900 antialiased">
+<body class="font-sans-body text-gray-900 antialiased" data-is-authenticated="{{ auth()->check() ? 'true' : 'false' }}" data-cart-count-url="{{ route('cart.count') }}" data-cart-add-url="{{ route('cart.add') }}">
 
     <!-- Navigation -->
     <nav class="bg-[#f5f3ef] border-b border-[#e8e5e0]">
@@ -34,7 +34,7 @@
                 </div>
 
                 <!-- Mobile Menu Button -->
-                <button type="button" class="md:hidden p-2 text-gray-800" onclick="document.getElementById('mobile-menu').classList.toggle('hidden')">
+                <button type="button" class="md:hidden p-2 text-gray-800" data-mobile-menu-toggle>
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="1.5">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                     </svg>
@@ -98,119 +98,8 @@
 
     @stack('scripts')
 
-    <!-- Cart JavaScript -->
-    <script>
-        // Update cart count on page load
-        document.addEventListener('DOMContentLoaded', function() {
-            @auth
-            updateCartCount();
-            @endauth
-            setupAddToCartButtons();
-        });
-
-        // Update cart count badge
-        async function updateCartCount() {
-            try {
-                const response = await fetch('{{ route('cart.count') }}');
-                const data = await response.json();
-                
-                const cartCountEl = document.getElementById('cart-count');
-                if (data.count > 0) {
-                    cartCountEl.textContent = data.count;
-                    cartCountEl.classList.remove('hidden');
-                } else {
-                    cartCountEl.classList.add('hidden');
-                }
-            } catch (error) {
-                console.error('Error updating cart count:', error);
-            }
-        }
-
-        // Setup add to cart buttons
-        function setupAddToCartButtons() {
-            const buttons = document.querySelectorAll('.add-to-cart-btn');
-            
-            buttons.forEach(button => {
-                button.addEventListener('click', async function(e) {
-                    e.preventDefault();
-                    
-                    if (this.disabled) return;
-                    
-                    const productId = this.dataset.productId;
-                    const productName = this.dataset.productName;
-                    const btnText = this.querySelector('.btn-text');
-                    const btnLoading = this.querySelector('.btn-loading');
-                    
-                    // Show loading state
-                    btnText.classList.add('hidden');
-                    btnLoading.classList.remove('hidden');
-                    this.disabled = true;
-                    
-                    try {
-                        const response = await fetch('{{ route('cart.add') }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'Accept': 'application/json',
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
-                            },
-                            body: JSON.stringify({
-                                product_id: productId,
-                                quantity: 1
-                            })
-                        });
-                        
-                        const data = await response.json();
-                        
-                        if (data.success) {
-                            // Update cart count
-                            const cartCountEl = document.getElementById('cart-count');
-                            cartCountEl.textContent = data.cart_count;
-                            cartCountEl.classList.remove('hidden');
-                            
-                            // Show success message
-                            showNotification(data.message, 'success');
-                        } else {
-                            showNotification(data.message, 'error');
-                        }
-                    } catch (error) {
-                        console.error('Error adding to cart:', error);
-                        showNotification('Error adding item to cart', 'error');
-                    } finally {
-                        // Reset button state
-                        btnText.classList.remove('hidden');
-                        btnLoading.classList.add('hidden');
-                        this.disabled = false;
-                    }
-                });
-            });
-        }
-
-        // Show notification
-        function showNotification(message, type = 'success') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 transition-all duration-300 transform translate-x-full ${
-                type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'
-            }`;
-            notification.textContent = message;
-            
-            document.body.appendChild(notification);
-            
-            // Animate in
-            setTimeout(() => {
-                notification.classList.remove('translate-x-full');
-            }, 10);
-            
-            // Remove after 3 seconds
-            setTimeout(() => {
-                notification.classList.add('translate-x-full');
-                setTimeout(() => {
-                    notification.remove();
-                }, 300);
-            }, 3000);
-        }
-    </script>
+    <!-- Layout JavaScript -->
+    <script src="{{ asset('js/layout.js') }}"></script>
 
 </body>
 </html>

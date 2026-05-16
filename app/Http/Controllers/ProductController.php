@@ -26,9 +26,15 @@ class ProductController extends Controller
             $query->where('category_id', $request->category);
         }
 
+        // Gender filtering
+        if ($request->has('gender') && $request->gender) {
+            $query->where('gender', $request->gender);
+        }
+
         $products = $query->latest()->get();
         $categories = Category::all();
         $selectedCategory = $request->category;
+        $selectedGender = $request->gender;
 
         // Return JSON for AJAX requests
         if ($request->expectsJson()) {
@@ -45,12 +51,13 @@ class ProductController extends Controller
                         'stock' => $product->stock,
                         'image' => $product->image,
                         'category_name' => $product->category ? $product->category->name : 'General',
+                        'gender' => $product->gender,
                     ];
                 })
             ]);
         }
 
-        return view('products', compact('products', 'categories', 'selectedCategory'));
+        return view('products', compact('products', 'categories', 'selectedCategory', 'selectedGender'));
     }
 
     public function show(Product $product)
