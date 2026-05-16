@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Log In — PureFit Apparel</title>
+    <title>Forgot Password — PureFit Apparel</title>
     @vite(['resources/css/app.css', 'resources/js/app.js'])
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -26,15 +26,21 @@
         <!-- Heading -->
         <div class="text-center mb-8">
             <h1 class="font-serif-display text-[32px] sm:text-[40px] leading-[1.1] text-gray-900 mb-3">
-                Welcome back.
+                Forgot password?
             </h1>
             <p class="text-[14px] text-gray-600">
-                Log in to your account to continue.
+                No worries, we'll send you reset instructions.
             </p>
         </div>
 
-        <!-- Login Form -->
-        <form method="POST" action="{{ route('login') }}" class="space-y-5">
+        @if (session('status'))
+            <div class="mb-6 p-4 bg-green-50 border border-green-200 text-green-700 text-[13px] text-center">
+                {{ session('status') }}
+            </div>
+        @endif
+
+        <!-- Forgot Password Form -->
+        <form method="POST" action="{{ route('password.email') }}" class="space-y-5">
             @csrf
 
             <div>
@@ -47,46 +53,16 @@
                 @enderror
             </div>
 
-            <div>
-                <label for="password" class="block text-[11px] font-semibold tracking-[0.12em] uppercase text-gray-700 mb-2">Password</label>
-                <input type="password" id="password" name="password" required
-                       class="w-full bg-white border border-[#ddd8d0] px-4 py-3 text-[14px] text-gray-900 placeholder-gray-400 focus:outline-none focus:border-[#111] transition-colors"
-                       placeholder="Enter your password">
-                @error('password')
-                    <p class="mt-2 text-[12px] text-red-600">{{ $message }}</p>
-                @enderror
-            </div>
-
-            <div class="flex items-center justify-between">
-                <label class="flex items-center gap-2 cursor-pointer">
-                    <!-- <input type="checkbox" name="remember" class="w-4 h-4 border border-[#ddd8d0] accent-[#111]">
-                    <span class="text-[13px] text-gray-600">Remember me</span> -->
-                </label>
-                <a href="{{ route('password.request') }}" class="text-[13px] text-gray-600 hover:text-black transition-colors underline underline-offset-2">Forgot password?</a>
-            </div>
-
-            <input type="hidden" name="redirect" value="{{ old('redirect', request('redirect')) }}">
-
             <button type="submit"
                     class="w-full bg-[#111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase px-8 py-3.5 hover:bg-gray-800 transition-colors">
-                Log In
+                Send Reset Link
             </button>
         </form>
 
-        <!-- Divider -->
-        <div class="relative my-8">
-            <div class="absolute inset-0 flex items-center">
-                <div class="w-full border-t border-[#ddd8d0]"></div>
-            </div>
-            <div class="relative flex justify-center">
-                <span class="bg-[#f5f3ef] px-4 text-[12px] text-gray-500 uppercase tracking-wider">or</span>
-            </div>
-        </div>
-
-        <!-- Register Link -->
-        <p class="text-center text-[14px] text-gray-600">
-            Don't have an account?
-            <a href="{{ route('register') }}" class="text-gray-900 font-medium hover:underline underline-offset-2 ml-1">Create an account</a>
+        <!-- Back to Login -->
+        <p class="text-center text-[14px] text-gray-600 mt-8">
+            Remember your password?
+            <a href="{{ route('login') }}" class="text-gray-900 font-medium hover:underline underline-offset-2 ml-1">Log in</a>
         </p>
     </div>
 

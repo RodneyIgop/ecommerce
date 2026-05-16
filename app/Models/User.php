@@ -22,6 +22,10 @@ class User extends Authenticatable
     const ROLE_BUSINESS = 'business';
     const ROLE_BUYER = 'buyer';
 
+    const STATUS_PENDING = 'pending';
+    const STATUS_APPROVED = 'approved';
+    const STATUS_REJECTED = 'rejected';
+
     protected $fillable = [
         'name',
         'email',
@@ -85,11 +89,6 @@ class User extends Authenticatable
     public function cart()
     {
         return $this->hasOne(\App\Models\Cart::class);
-    }
-
-    public function wallet()
-    {
-        return $this->hasOne(\App\Models\Wallet::class);
     }
 
     public function reviews()

@@ -14,10 +14,13 @@ use App\Models\ProductVariant;
 use App\Models\InventoryLog;
 use App\Models\PreorderQueue;
 use App\Models\Notification;
+use App\Models\BusinessProfile;
 use App\Services\InventoryManager;
 use App\Services\NotificationService;
 use App\Services\OrderStateMachine;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 
 class BusinessController extends Controller
 {
@@ -64,6 +67,11 @@ class BusinessController extends Controller
 
         $wholesaleListings = Product::where('business_id', $businessId)->where('wholesale_price', '>', 0)->count();
 
+        $recentOrders = Order::where('business_id', $businessId)
+            ->latest()
+            ->take(3)
+            ->get();
+
         return view('business.dashboard', compact(
             'business',
             'totalProducts',
@@ -83,7 +91,8 @@ class BusinessController extends Controller
             'bestSellingProduct',
             'soloBuyerCustomers',
             'businessCustomers',
-            'wholesaleListings'
+            'wholesaleListings',
+            'recentOrders'
         ));
     }
 
@@ -110,20 +119,25 @@ class BusinessController extends Controller
         $query = Product::where('business_id', $businessId)
             ->whereIn('status', ['active', 'flagged'])
             ->with('category');
-            
+
         // Filter by category if selected
         if ($request->filled('category')) {
             $query->where('category_id', $request->category);
         }
-        
+
+        // Filter by gender if selected
+        if ($request->filled('gender')) {
+            $query->where('gender', $request->gender);
+        }
+
         $products = $query->latest()->get();
         $categories = Category::all();
-        
+
         // If AJAX request, return only the products grid
         if ($request->ajax() || $request->header('X-Requested-With') === 'XMLHttpRequest') {
             return view('business.products_grid', compact('products'))->render();
         }
-        
+
         return view('business.products', compact('products', 'categories'));
     }
 
@@ -288,8 +302,20 @@ class BusinessController extends Controller
 
     public function orders()
     {
-        $retailOrders = collect();
-        $b2bOrders = collect();
+        $businessId = auth()->id();
+
+        $retailOrders = Order::where('business_id', $businessId)
+            ->where('type', 'retail')
+            ->with('buyer', 'items.product')
+            ->orderByDesc('created_at')
+            ->get();
+
+        $b2bOrders = Order::where('business_id', $businessId)
+            ->where('type', 'b2b')
+            ->with('buyer', 'items.product')
+            ->orderByDesc('created_at')
+            ->get();
+
         return view('business.orders', compact('retailOrders', 'b2bOrders'));
     }
 
@@ -581,5 +607,73 @@ class BusinessController extends Controller
         ]);
 
         return back()->with('success', 'Variant created.');
+    }
+
+    public function profile()
+    {
+        $business = auth()->user()->businessProfile;
+        return view('business.profile', compact('business'));
+    }
+
+    public function updateProfile(Request $request)
+    {
+        $business = auth()->user()->businessProfile;
+
+        $validated = $request->validate([
+            'business_name' => 'required|string|max:255',
+            'business_address' => 'nullable|string|max:255',
+            'business_phone' => 'nullable|string|max:20',
+            'tax_id' => 'nullable|string|max:50',
+            'logo' => 'nullable|file|max:10240|mimes:jpg,jpeg,png,webp',
+        ]);
+
+        $updateData = [
+            'business_name' => $validated['business_name'],
+            'business_address' => $validated['business_address'] ?? null,
+            'business_phone' => $validated['business_phone'] ?? null,
+            'tax_id' => $validated['tax_id'] ?? null,
+        ];
+
+        if ($request->hasFile('logo') && $request->file('logo')->isValid()) {
+            if ($business && $business->logo && Storage::disk('public')->exists($business->logo)) {
+                Storage::disk('public')->delete($business->logo);
+            }
+            $logoPath = $request->file('logo')->store('business-logos', 'public');
+            $updateData['logo'] = $logoPath;
+        }
+
+        if ($business) {
+            $business->update($updateData);
+        } else {
+            $updateData['user_id'] = auth()->id();
+            BusinessProfile::create($updateData);
+        }
+
+        return back()->with('success', 'Business profile updated successfully.');
+    }
+
+    public function settings()
+    {
+        $user = auth()->user();
+        return view('business.settings', compact('user'));
+    }
+
+    public function updatePassword(Request $request)
+    {
+        $validated = $request->validate([
+            'current_password' => 'required|string',
+            'password' => 'required|string|min:8|confirmed',
+        ]);
+
+        $user = auth()->user();
+
+        if (!Hash::check($validated['current_password'], $user->password)) {
+            return back()->with('error', 'Current password is incorrect.');
+        }
+
+        $user->password = Hash::make($validated['password']);
+        $user->save();
+
+        return back()->with('success', 'Password updated successfully.');
     }
 }

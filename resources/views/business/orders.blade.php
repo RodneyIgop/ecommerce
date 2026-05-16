@@ -32,7 +32,10 @@
                     @forelse ($retailOrders as $order)
                         <tr class="border-b border-[#f0ede8] hover:bg-[#faf9f7] transition-colors">
                             <td class="px-6 py-4 text-[14px]">#{{ $order->id }}</td>
-                            <td class="px-6 py-4 text-[14px]">{{ $order->buyer->name ?? '—' }}</td>
+                            <td class="px-6 py-4 text-[14px]">
+                                <div>{{ $order->buyer->name ?? '—' }}</div>
+                                <div class="text-[12px] text-gray-500">{{ $order->buyer->email ?? '' }}</div>
+                            </td>
                             <td class="px-6 py-4 text-[14px] font-medium">₱{{ number_format($order->total, 2) }}</td>
                             <td class="px-6 py-4">
                                 <span class="inline-flex px-2 py-0.5 text-[11px] font-semibold uppercase rounded-full {{ $order->status == 'pending' ? 'bg-yellow-100 text-yellow-800' : ($order->status == 'processing' ? 'bg-blue-100 text-blue-800' : ($order->status == 'shipped' ? 'bg-purple-100 text-purple-800' : ($order->status == 'delivered' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'))) }}">{{ $order->status }}</span>
@@ -48,6 +51,24 @@
                                         <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                                     </select>
                                 </form>
+                            </td>
+                        </tr>
+                        <tr class="bg-[#faf9f7]">
+                            <td colspan="6" class="px-6 py-3">
+                                <div class="text-[12px] text-gray-600 mb-2">Order Items:</div>
+                                @foreach($order->items as $item)
+                                    <div class="flex justify-between items-center py-1 text-[13px]">
+                                        <div>
+                                            <span>{{ $item->product->name ?? 'Unknown Product' }} × {{ $item->quantity }}</span>
+                                            <span class="text-gray-500 text-[12px] ml-2">(₱{{ number_format($item->unit_price, 2) }} each)</span>
+                                        </div>
+                                        <span class="font-medium">₱{{ number_format($item->unit_price * $item->quantity, 2) }}</span>
+                                    </div>
+                                @endforeach
+                                <div class="flex justify-between items-center pt-2 mt-2 border-t border-gray-200">
+                                    <span class="text-[12px] font-semibold text-gray-700">Total:</span>
+                                    <span class="text-[13px] font-bold text-gray-900">₱{{ number_format($order->total, 2) }}</span>
+                                </div>
                             </td>
                         </tr>
                     @empty
@@ -83,7 +104,10 @@
                     @forelse ($b2bOrders as $order)
                         <tr class="border-b border-[#f0ede8] hover:bg-[#faf9f7] transition-colors">
                             <td class="px-6 py-4 text-[14px]">#{{ $order->id }}</td>
-                            <td class="px-6 py-4 text-[14px]">{{ $order->buyer->name ?? '—' }}</td>
+                            <td class="px-6 py-4 text-[14px]">
+                                <div>{{ $order->buyer->name ?? '—' }}</div>
+                                <div class="text-[12px] text-gray-500">{{ $order->buyer->email ?? '' }}</div>
+                            </td>
                             <td class="px-6 py-4 text-[14px] font-medium">₱{{ number_format($order->total, 2) }}</td>
                             <td class="px-6 py-4">
                                 <span class="inline-flex px-2 py-0.5 text-[11px] font-semibold uppercase rounded-full {{ $order->status == 'pending' ? 'bg-yellow-100 text-yellow-800' : ($order->status == 'processing' ? 'bg-blue-100 text-blue-800' : ($order->status == 'shipped' ? 'bg-purple-100 text-purple-800' : ($order->status == 'delivered' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'))) }}">{{ $order->status }}</span>
@@ -99,6 +123,24 @@
                                         <option value="cancelled" {{ $order->status == 'cancelled' ? 'selected' : '' }}>Cancelled</option>
                                     </select>
                                 </form>
+                            </td>
+                        </tr>
+                        <tr class="bg-[#faf9f7]">
+                            <td colspan="6" class="px-6 py-3">
+                                <div class="text-[12px] text-gray-600 mb-2">Order Items:</div>
+                                @foreach($order->items as $item)
+                                    <div class="flex justify-between items-center py-1 text-[13px]">
+                                        <div>
+                                            <span>{{ $item->product->name ?? 'Unknown Product' }} × {{ $item->quantity }}</span>
+                                            <span class="text-gray-500 text-[12px] ml-2">(₱{{ number_format($item->unit_price, 2) }} each)</span>
+                                        </div>
+                                        <span class="font-medium">₱{{ number_format($item->unit_price * $item->quantity, 2) }}</span>
+                                    </div>
+                                @endforeach
+                                <div class="flex justify-between items-center pt-2 mt-2 border-t border-gray-200">
+                                    <span class="text-[12px] font-semibold text-gray-700">Total:</span>
+                                    <span class="text-[13px] font-bold text-gray-900">₱{{ number_format($order->total, 2) }}</span>
+                                </div>
                             </td>
                         </tr>
                     @empty

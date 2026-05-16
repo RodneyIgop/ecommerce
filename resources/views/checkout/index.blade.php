@@ -45,16 +45,13 @@
                     <div class="bg-white border border-[#e8e5e0] p-6">
                         <h2 class="text-[11px] font-semibold tracking-[0.15em] uppercase text-gray-900 mb-5">Payment Method</h2>
                         <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                            @foreach(['stripe'=>'Credit Card','paypal'=>'PayPal','bank_transfer'=>'Bank Transfer','cod'=>'Cash on Delivery','wallet'=>'Wallet'] as $value=>$label)
+                            @foreach(['stripe'=>'Credit Card','paypal'=>'PayPal','bank_transfer'=>'Bank Transfer','cod'=>'Cash on Delivery'] as $value=>$label)
                             <label class="cursor-pointer border border-[#e8e5e0] p-3 hover:border-black transition-colors has-[:checked]:border-black has-[:checked]:bg-[#f5f3ef]">
                                 <input type="radio" name="payment_method" value="{{ $value }}" class="hidden" {{ $loop->first ? 'checked' : '' }}>
                                 <span class="text-[11px] font-medium">{{ $label }}</span>
                             </label>
                             @endforeach
                         </div>
-                        @if($wallet)
-                        <p class="text-[11px] text-gray-600 mt-3">Wallet Balance: ${{ number_format($wallet->balance, 2) }}</p>
-                        @endif
                     </div>
 
                     <div class="bg-white border border-[#e8e5e0] p-6">
@@ -75,26 +72,26 @@
                             <p class="font-medium text-gray-900">{{ $item->product->name }} x{{ $item->quantity }}</p>
                             <p class="text-gray-500 text-[10px]">{{ $item->type }}</p>
                         </div>
-                        <p class="font-medium">${{ number_format($item->unit_price * $item->quantity, 2) }}</p>
+                        <p class="font-medium">₱{{ number_format($item->unit_price * $item->quantity, 2) }}</p>
                     </div>
                     @endforeach
                     <div class="flex justify-between text-[13px] pt-3">
                         <span class="text-gray-600">Subtotal</span>
-                        <span class="font-medium">${{ number_format($cart->total + $cart->discount_total, 2) }}</span>
+                        <span class="font-medium">₱{{ number_format($cart->total + $cart->discount_total, 2) }}</span>
                     </div>
                     @if($cart->discount_total > 0)
                     <div class="flex justify-between text-[13px] pt-1">
                         <span class="text-green-700">Discounts</span>
-                        <span class="font-medium text-green-700">-${{ number_format($cart->discount_total, 2) }}</span>
+                        <span class="font-medium text-green-700">-₱{{ number_format($cart->discount_total, 2) }}</span>
                     </div>
                     @endif
                     <div class="flex justify-between text-[13px] pt-1">
                         <span class="text-gray-600">Shipping</span>
-                        <span class="font-medium">${{ number_format($cart->shipping_total, 2) }}</span>
+                        <span class="font-medium">₱{{ number_format($cart->shipping_total, 2) }}</span>
                     </div>
                     <div class="flex justify-between text-[18px] font-semibold text-gray-900 pt-4 border-t border-[#e8e5e0] mt-4">
                         <span>Total</span>
-                        <span>${{ number_format($cart->total + $cart->shipping_total, 2) }}</span>
+                        <span>₱{{ number_format($cart->total + $cart->shipping_total, 2) }}</span>
                     </div>
                 </div>
             </div>
@@ -102,7 +99,7 @@
         @else
         <div class="bg-white border border-[#e8e5e0] p-16 text-center">
             <p class="text-[13px] text-gray-600 mb-6">Your cart is empty.</p>
-            <a href="{{ route('marketplace.index') }}" class="inline-block bg-[#111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase py-3 px-8 hover:bg-gray-800 transition-colors">Continue Shopping</a>
+            <a href="{{ route('products') }}" class="inline-block bg-[#111] text-white text-[11px] font-semibold tracking-[0.12em] uppercase py-3 px-8 hover:bg-gray-800 transition-colors">Continue Shopping</a>
         </div>
         @endif
     </div>

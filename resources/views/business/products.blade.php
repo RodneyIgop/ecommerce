@@ -94,14 +94,21 @@
                     <select id="categoryFilter" class="bg-white border border-[#e8e5e0] text-[12px] py-2 px-3 rounded focus:outline-none focus:border-black focus:ring-1 focus:ring-black">
                         <option value="">All Categories</option>
                         @foreach($categories as $category)
-                            <option value="{{ $category->id }}" 
+                            <option value="{{ $category->id }}"
                                     data-is-clothing="{{ str_contains(strtolower($category->name), 'clothing') || str_contains(strtolower($category->name), 'shirt') || str_contains(strtolower($category->name), 'pants') || str_contains(strtolower($category->name), 'dress') ? 'true' : 'false' }}"
                                     {{ request('category') == $category->id ? 'selected' : '' }}>
                                 {{ $category->name }}
                             </option>
                         @endforeach
                     </select>
-                    <button id="clearFilter" class="text-[11px] text-gray-600 hover:text-black underline transition-colors {{ request('category') ? '' : 'hidden' }}">Clear</button>
+                    <select id="genderFilter" class="bg-white border border-[#e8e5e0] text-[12px] py-2 px-3 rounded focus:outline-none focus:border-black focus:ring-1 focus:ring-black">
+                        <option value="">All Genders</option>
+                        <option value="men" {{ request('gender') == 'men' ? 'selected' : '' }}>Men</option>
+                        <option value="women" {{ request('gender') == 'women' ? 'selected' : '' }}>Women</option>
+                        <option value="unisex" {{ request('gender') == 'unisex' ? 'selected' : '' }}>Unisex</option>
+                    </select>
+
+                    <button id="clearFilter" class="text-[11px] text-gray-600 hover:text-black underline transition-colors {{ request('category') || request('gender') ? '' : 'hidden' }}">Clear</button>
                 </div>
             </div>
         </div>
@@ -146,7 +153,7 @@
                                 {{ ucfirst($product->gender) }}
                             </span>
                         </div>
-                        
+
                         <!-- Prices -->
                         <div class="flex items-center gap-3 mb-3">
                             <div>
@@ -283,322 +290,6 @@
 @endsection
 
 @push('scripts')
-<style>
-/* Uniform card sizes for all layouts */
-#productsGrid > div {
-    min-height: 480px !important;
-    max-height: 480px !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-#productsGrid .aspect-square {
-    aspect-ratio: 1/1 !important;
-    min-height: 160px !important;
-    max-height: 160px !important;
-    flex-shrink: 0 !important;
-}
-
-#productsGrid .p-4 {
-    padding: 1rem !important;
-    flex-grow: 1 !important;
-    display: flex !important;
-    flex-direction: column !important;
-}
-
-#productsGrid h3 {
-    font-size: 15px !important;
-    line-height: 1.4 !important;
-    margin-bottom: 0.5rem !important;
-    flex-shrink: 0 !important;
-}
-
-#productsGrid .flex.items-center.gap-2 {
-    margin-bottom: 0.75rem !important;
-    flex-shrink: 0 !important;
-}
-
-#productsGrid .flex.items-center.gap-3 {
-    margin-bottom: 0.75rem !important;
-    flex-shrink: 0 !important;
-}
-
-#productsGrid .mb-3 {
-    margin-bottom: 0.75rem !important;
-    flex-shrink: 0 !important;
-}
-
-#productsGrid .mb-4 {
-    margin-bottom: 1rem !important;
-    flex-grow: 1 !important;
-}
-
-#productsGrid .flex.gap-2 {
-    margin-top: auto !important;
-    flex-shrink: 0 !important;
-}
-
-/* Consistent grid layout for all states - uniform across all categories */
-#productsGrid {
-    gap: 1rem !important;
-    grid-template-columns: repeat(4, 1fr) !important;
-    max-width: 100% !important;
-    overflow-x: hidden !important;
-}
-
-#productsGrid > div {
-    min-height: 480px !important;
-    max-height: 480px !important;
-    min-width: 220px !important;
-    max-width: 300px !important;
-    transform: none !important;
-    margin: 0 !important;
-    box-sizing: border-box !important;
-}
-
-/* Ensure buttons are always visible in clothing layout */
-#productsGrid.grid-cols-2.md\:grid-cols-4.lg\:grid-cols-6.xl\:grid-cols-8 .flex.gap-2 {
-    margin-top: auto !important;
-    flex-shrink: 0 !important;
-    padding-top: 0.5rem !important;
-    display: flex !important;
-    visibility: visible !important;
-}
-
-#productsGrid.grid-cols-2.md\:grid-cols-4.lg\:grid-cols-6.xl\:grid-cols-8 button {
-    font-size: 11px !important;
-    padding: 6px 8px !important;
-    min-width: 60px !important;
-    white-space: nowrap !important;
-    display: inline-block !important;
-    visibility: visible !important;
-    opacity: 1 !important;
-}
-
-/* Make sure all button containers are visible */
-#productsGrid .flex.gap-2 {
-    display: flex !important;
-    visibility: visible !important;
-}
-
-#productsGrid.grid-cols-2.md\:grid-cols-4.lg\:grid-cols-6.xl\:grid-cols-8 .mb-4 {
-    margin-bottom: 0.5rem !important;
-    flex-grow: 0 !important;
-}
-
-/* Adjust grid for wider cards on larger screens */
-@media (min-width: 1280px) {
-    #productsGrid.grid-cols-2.md\:grid-cols-4.lg\:grid-cols-6.xl\:grid-cols-8 {
-        grid-template-columns: repeat(6, minmax(280px, 1fr)) !important;
-    }
-}
-
-@media (min-width: 1536px) {
-    #productsGrid.grid-cols-2.md\:grid-cols-4.lg\:grid-cols-6.xl\:grid-cols-8 {
-        grid-template-columns: repeat(7, minmax(280px, 1fr)) !important;
-    }
-}
-</style>
-<script>
-function addBulkPricingRow() {
-    const container = document.getElementById('bulk-pricing-container');
-    const newRow = document.createElement('div');
-    newRow.className = 'bulk-pricing-row grid grid-cols-2 gap-3';
-    newRow.innerHTML = `
-        <input type="number" name="bulk_min_quantity[]" placeholder="Min Qty" min="1" class="border border-[#e8e5e0] rounded px-3 py-2 text-[14px] focus:outline-none focus:border-gray-400">
-        <input type="number" name="bulk_max_quantity[]" placeholder="Max Qty" min="1" class="border border-[#e8e5e0] rounded px-3 py-2 text-[14px] focus:outline-none focus:border-gray-400">
-    `;
-    container.appendChild(newRow);
-}
-
-function openEditModal(productId) {
-    console.log('Opening edit modal for product:', productId);
-    
-    // Fetch product data via AJAX
-    fetch(`/business/products/${productId}/edit`)
-        .then(response => {
-            console.log('Response status:', response.status);
-            if (!response.ok) {
-                throw new Error('Network response was not ok');
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('Product data:', data);
-            document.getElementById('editProductId').value = data.id;
-            document.getElementById('edit_name').value = data.name;
-            document.getElementById('edit_description').value = data.description || '';
-            document.getElementById('edit_category_id').value = data.category_id;
-            document.getElementById('edit_status').value = data.status;
-            document.getElementById('edit_gender').value = data.gender;
-            document.getElementById('edit_retail_price').value = data.retail_price;
-            document.getElementById('edit_wholesale_price').value = data.wholesale_price || '';
-            document.getElementById('edit_stock').value = data.stock;
-            document.getElementById('editForm').action = `/business/products/${data.id}`;
-            
-            document.getElementById('editModal').classList.remove('hidden');
-        })
-        .catch(error => {
-            console.error('Error:', error);
-            alert('Error loading product data: ' + error.message);
-        });
-}
-
-function closeEditModal() {
-    document.getElementById('editModal').classList.add('hidden');
-}
-
-function archiveProduct(productId, button) {
-    if (!confirm('Are you sure you want to archive this product?')) return;
-
-    const token = document.querySelector('meta[name="csrf-token"]');
-    const csrfToken = token ? token.content : '';
-
-    fetch(`/business/products/${productId}/archive`, {
-        method: 'POST',
-        headers: {
-            'X-CSRF-TOKEN': csrfToken,
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-        }
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            // Remove the card from the grid
-            const card = button.closest('.bg-white');
-            card.style.transition = 'opacity 0.3s';
-            card.style.opacity = '0';
-            setTimeout(() => card.remove(), 300);
-        } else {
-            alert('Error archiving product');
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        alert('Error archiving product');
-    });
-}
-
-// Function to update grid layout - uniform across all categories
-function updateGridLayout(categoryId) {
-    const productsGrid = document.getElementById('productsGrid');
-    if (!productsGrid) return;
-    
-    // Keep uniform layout for all categories
-    productsGrid.className = 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6';
-}
-
-// Category filter AJAX
-document.getElementById('categoryFilter').addEventListener('change', function() {
-    const categoryId = this.value;
-    const clearBtn = document.getElementById('clearFilter');
-    
-    // Show/hide clear button
-    if (categoryId) {
-        clearBtn.classList.remove('hidden');
-    } else {
-        clearBtn.classList.add('hidden');
-    }
-    
-    // Update grid layout immediately
-    updateGridLayout(categoryId);
-    
-    // Show loading state
-    const currentGrid = document.getElementById('productsGrid');
-    if (currentGrid) {
-        currentGrid.style.opacity = '0.5';
-    }
-    
-    // Fetch filtered products
-    fetch(`{{ route('business.products.filter') }}?category=${categoryId}`, {
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'text/html'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.text();
-    })
-    .then(html => {
-        // Create a temporary div to parse the response
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        
-        // Extract the products grid from the response
-        const newProductsGrid = tempDiv.querySelector('#productsGrid');
-        
-        if (newProductsGrid && currentGrid) {
-            currentGrid.innerHTML = newProductsGrid.innerHTML;
-            // Reapply the grid layout after content replacement
-            updateGridLayout(categoryId);
-            currentGrid.style.opacity = '1';
-        } else {
-            console.error('Could not find grid elements');
-            if (currentGrid) currentGrid.style.opacity = '1';
-        }
-    })
-    .catch(error => {
-        console.error('Error filtering products:', error);
-        if (currentGrid) currentGrid.style.opacity = '1';
-        alert('Error filtering products. Please try again.');
-    });
-});
-
-// Clear filter
-document.getElementById('clearFilter').addEventListener('click', function(e) {
-    e.preventDefault();
-    document.getElementById('categoryFilter').value = '';
-    this.classList.add('hidden');
-    
-    // Reset grid layout to normal
-    updateGridLayout('');
-    
-    // Show loading state
-    const currentGrid = document.getElementById('productsGrid');
-    if (currentGrid) {
-        currentGrid.style.opacity = '0.5';
-    }
-    
-    // Fetch all products
-    fetch(`{{ route('business.products.filter') }}`, {
-        headers: {
-            'X-Requested-With': 'XMLHttpRequest',
-            'Accept': 'text/html'
-        }
-    })
-    .then(response => {
-        if (!response.ok) {
-            throw new Error('Network response was not ok');
-        }
-        return response.text();
-    })
-    .then(html => {
-        // Create a temporary div to parse the response
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = html;
-        
-        // Extract the products grid from the response
-        const newProductsGrid = tempDiv.querySelector('#productsGrid');
-        
-        if (newProductsGrid && currentGrid) {
-            currentGrid.innerHTML = newProductsGrid.innerHTML;
-            // Reapply the grid layout after content replacement (normal layout)
-            updateGridLayout('');
-            currentGrid.style.opacity = '1';
-        } else {
-            console.error('Could not find grid elements');
-            if (currentGrid) currentGrid.style.opacity = '1';
-        }
-    })
-    .catch(error => {
-        console.error('Error clearing filter:', error);
-        if (currentGrid) currentGrid.style.opacity = '1';
-        alert('Error clearing filter. Please try again.');
-    });
-});
-</script>
+<script src="{{ asset('js/businessProducts.js') }}" defer></script>
+<link rel="stylesheet" href="{{ asset('css/businessProducts.css') }}">
 @endpush

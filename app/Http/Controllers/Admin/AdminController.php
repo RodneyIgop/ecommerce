@@ -18,22 +18,21 @@ class AdminController extends Controller
 {
     public function index()
     {
-        $totalUsers = User::whereIn('role', [User::ROLE_BUSINESS, User::ROLE_BUYER])->count();
+        $totalUsers = User::where('role', User::ROLE_BUSINESS)->count();
         $totalBusinesses = User::where('role', User::ROLE_BUSINESS)->count();
-        $totalBuyers = User::where('role', User::ROLE_BUYER)->count();
         $totalProducts = Product::count();
         $retailOrders = Order::where('type', 'retail')->count();
         $b2bOrders = Order::where('type', 'b2b')->count();
         $totalRevenue = Order::sum('commission') + Order::sum('platform_fee');
 
-        $users = User::whereIn('role', [User::ROLE_BUSINESS, User::ROLE_BUYER])
-            ->orderBy('role')->orderBy('name')->get();
+        $users = User::where('role', User::ROLE_BUSINESS)
+            ->orderBy('name')->get();
 
         $openDisputes = Dispute::where('status', 'open')->count();
         $pendingVerifications = BusinessProfile::whereNull('verified_at')->count();
 
         return view('admin.dashboard', compact(
-            'users', 'totalUsers', 'totalBusinesses', 'totalBuyers',
+            'users', 'totalUsers', 'totalBusinesses',
             'totalProducts', 'retailOrders', 'b2bOrders', 'totalRevenue',
             'openDisputes', 'pendingVerifications'
         ));
@@ -148,22 +147,30 @@ class AdminController extends Controller
 
     public function users()
     {
-        $buyers = User::where('role', User::ROLE_BUYER)
-            ->orderBy('created_at', 'desc')
-            ->get();
-
-        $businesses = User::where('role', User::ROLE_BUSINESS)
+        $businesses = User::where('role', '!=', User::ROLE_ADMIN)
             ->with('businessProfile')
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return view('admin.users', compact('buyers', 'businesses'));
+        return view('admin.users', compact('businesses'));
     }
 
     public function toggleUserStatus(Request $request, User $user)
     {
         $user->update(['status' => $request->status]);
         return back()->with('success', 'User status updated.');
+    }
+
+    public function approveUser(User $user)
+    {
+        $user->update(['status' => User::STATUS_APPROVED]);
+        return back()->with('success', 'User account approved successfully.');
+    }
+
+    public function rejectUser(User $user)
+    {
+        $user->update(['status' => User::STATUS_REJECTED]);
+        return back()->with('success', 'User account rejected.');
     }
 
     public function analytics()
@@ -177,13 +184,8 @@ class AdminController extends Controller
             ->orderBy('order_items_count', 'desc')
             ->first();
 
-        $mostActiveBuyer = User::where('role', User::ROLE_BUYER)
-            ->withCount('ordersAsBuyer')
-            ->orderBy('orders_as_buyer_count', 'desc')
-            ->first();
-
         $totalOrders = Order::count();
-        $totalUsers = User::whereIn('role', [User::ROLE_BUSINESS, User::ROLE_BUYER])->count();
+        $totalUsers = User::where('role', User::ROLE_BUSINESS)->count();
         $conversionRate = $totalUsers > 0 ? round(($totalOrders / $totalUsers) * 100, 1) : 0;
 
         $retailGrowth = Order::where('type', 'retail')->count();
@@ -203,7 +205,7 @@ class AdminController extends Controller
         $topCategories = \App\Services\RecommendationEngine::bestSellingCategories(10);
 
         return view('admin.analytics', compact(
-            'topBusiness', 'topProduct', 'mostActiveBuyer',
+            'topBusiness', 'topProduct',
             'conversionRate', 'retailGrowth', 'b2bGrowth',
             'totalSales', 'totalCommission', 'activeBusinesses',
             'pendingDisputes', 'monthlyRevenue', 'topCategories'
