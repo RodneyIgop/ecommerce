@@ -11,7 +11,7 @@ class ProductController extends Controller
 {
     public function index(Request $request)
     {
-        $query = Product::with('category')->where('status', 'active');
+        $query = Product::with('category', 'business.businessProfile')->where('status', 'active');
 
         // Search functionality
         if ($request->has('search') && $request->search) {
@@ -31,7 +31,9 @@ class ProductController extends Controller
             $query->where('gender', $request->gender);
         }
 
-        $products = $query->latest()->get();
+        // Preserve original product order by ID ascending (no sorting applied during filtering)
+        $products = $query->orderBy('id', 'asc')->get();
+        $productsByShop = $products->groupBy('business_id');
         $categories = Category::all();
         $selectedCategory = $request->category;
         $selectedGender = $request->gender;
@@ -52,12 +54,16 @@ class ProductController extends Controller
                         'image' => $product->image,
                         'category_name' => $product->category ? $product->category->name : 'General',
                         'gender' => $product->gender,
+                        'business_id' => $product->business_id,
+                        'business_name' => $product->business && $product->business->businessProfile 
+                            ? $product->business->businessProfile->business_name 
+                            : ($product->business ? $product->business->name : 'Unknown Shop'),
                     ];
                 })
             ]);
         }
 
-        return view('products', compact('products', 'categories', 'selectedCategory', 'selectedGender'));
+        return view('products', compact('products', 'productsByShop', 'categories', 'selectedCategory', 'selectedGender'));
     }
 
     public function show(Product $product)

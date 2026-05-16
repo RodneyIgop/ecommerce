@@ -10,11 +10,14 @@
     let isLoading = false;
     let searchInput, categoryFilter, genderFilter, clearFiltersBtn, productsGrid;
     let appState = {};
+    let allProducts = [];
 
     /**
      * Initialize the products page
      */
     function init() {
+        console.log('Initializing products page...');
+
         // Get app state from data attributes
         const productsContainer = document.getElementById('products-page');
         if (!productsContainer) {
@@ -31,32 +34,96 @@
             checkoutUrl: productsContainer.dataset.checkoutUrl
         };
 
+        console.log('App state:', appState);
+
         // Get DOM elements
         searchInput = document.getElementById('search-input');
         categoryFilter = document.getElementById('category-filter');
         genderFilter = document.getElementById('gender-filter');
         clearFiltersBtn = document.getElementById('clear-filters');
-        productsGrid = document.querySelector('.grid');
+        productsGrid = document.getElementById('products-container');
+
+        console.log('DOM elements:', {
+            searchInput: !!searchInput,
+            categoryFilter: !!categoryFilter,
+            genderFilter: !!genderFilter,
+            clearFiltersBtn: !!clearFiltersBtn,
+            productsGrid: !!productsGrid
+        });
 
         if (!searchInput || !categoryFilter || !genderFilter || !clearFiltersBtn || !productsGrid) {
             console.error('Required DOM elements not found');
             return;
         }
 
+        // Add smooth transition styles to prevent layout shifts
+        productsGrid.style.transition = 'opacity 0.3s ease-in-out';
+        
+        // Add CSS for smooth animations if not already present
+        if (!document.getElementById('products-page-styles')) {
+            const style = document.createElement('style');
+            style.id = 'products-page-styles';
+            style.textContent = `
+                /* Shop sections maintain their position during filtering */
+                [data-business-id] {
+                    will-change: opacity;
+                    transition: opacity 0.3s ease-in-out;
+                }
+
+                /* Prevent layout shift when products change */
+                .grid {
+                    will-change: contents;
+                }
+
+                /* Smooth product card appearance */
+                .grid > div {
+                    animation: fadeIn 0.3s ease-in-out;
+                }
+
+                @keyframes fadeIn {
+                    from {
+                        opacity: 0;
+                    }
+                    to {
+                        opacity: 1;
+                    }
+                }
+
+                /* Maintain fixed heights during loading to prevent jumps */
+                [style*="min-height"] {
+                    transition: min-height 0.3s ease-in-out;
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
         console.log('Filter elements initialized');
 
-        // Live Search
+        // Apply initial filter if URL has parameters
+        const urlParams = new URLSearchParams(window.location.search);
+        console.log('URL params:', Object.fromEntries(urlParams));
+        
+        if (urlParams.has('search') || urlParams.has('category') || urlParams.has('gender')) {
+            searchInput.value = urlParams.get('search') || '';
+            categoryFilter.value = urlParams.get('category') || '';
+            genderFilter.value = urlParams.get('gender') || '';
+            console.log('Applying initial filter...');
+            filterProducts();
+        }
+
+        // Live Search with auto-refresh
         searchInput.addEventListener('input', () => {
             clearTimeout(searchTimeout);
+            // Auto-refresh after user stops typing for 300ms
             searchTimeout = setTimeout(() => {
                 filterProducts();
             }, 300);
         });
 
-        // Category Filter
+        // Category Filter - Auto-refresh on change
         categoryFilter.addEventListener('change', filterProducts);
 
-        // Gender Filter
+        // Gender Filter - Auto-refresh on change
         genderFilter.addEventListener('change', filterProducts);
 
         // Clear Filters
@@ -69,59 +136,126 @@
     }
 
     /**
-     * Fetch filtered products
+     * Filter products via AJAX - Real-time server-side filtering
      */
     async function filterProducts() {
-        if (isLoading) return;
-
         const search = searchInput.value.trim();
         const category = categoryFilter.value;
         const gender = genderFilter.value;
 
-        const params = new URLSearchParams();
+        console.log('Filtering - Search:', search, 'Category:', category, 'Gender:', gender);
 
+        // Update URL without page reload
+        const params = new URLSearchParams();
         if (search) params.append('search', search);
         if (category) params.append('category', category);
         if (gender) params.append('gender', gender);
-
-        console.log('Filtering with params:', params.toString());
-
-        // Update URL without page reload
         const newUrl = `${window.location.pathname}${params.toString() ? '?' + params.toString() : ''}`;
         window.history.replaceState({}, '', newUrl);
 
+        // Set loading state with smooth fade transition
         isLoading = true;
-        productsGrid.style.opacity = '0.5';
+        productsGrid.style.transition = 'opacity 0.3s ease-in-out';
+        productsGrid.style.opacity = '0.6';
 
         try {
-            const response = await fetch(`${appState.productsUrl}?${params.toString()}`, {
+            // Fetch filtered products from server
+            const queryParams = new URLSearchParams();
+            if (search) queryParams.append('search', search);
+            if (category) queryParams.append('category', category);
+            if (gender) queryParams.append('gender', gender);
+
+            const response = await fetch(`${appState.productsUrl}?${queryParams.toString()}`, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
                 }
             });
 
-            console.log('Response status:', response.status);
-
             if (!response.ok) {
-                throw new Error('Network response was not ok');
+                throw new Error('Failed to fetch products');
             }
 
             const data = await response.json();
+            console.log('Fetched products:', data.products.length);
 
-            console.log('Received products:', data.products?.length);
+            // Group products by business - maintain order
+            const productsByShop = {};
+            const shopOrder = [];
+            
+            data.products.forEach(product => {
+                if (!productsByShop[product.business_id]) {
+                    productsByShop[product.business_id] = {
+                        business_name: product.business_name,
+                        products: []
+                    };
+                    shopOrder.push(product.business_id);
+                }
+                productsByShop[product.business_id].products.push(product);
+            });
 
-            productsGrid.innerHTML = data.products.length
-                ? data.products.map(product => createProductCard(product)).join('')
-                : emptyState();
-
+            // Render products maintaining section organization
+            renderProducts(productsByShop, shopOrder);
+            
+            // Smooth transition back to full opacity
+            setTimeout(() => {
+                productsGrid.style.opacity = '1';
+            }, 50);
+            
+            isLoading = false;
         } catch (error) {
-            console.error('Filter error:', error);
-            showNotification('Failed to load products', 'error');
-        } finally {
+            console.error('Error filtering products:', error);
+            showNotification('Error loading products', 'error');
             isLoading = false;
             productsGrid.style.opacity = '1';
         }
+    }
+
+    /**
+     * Render products grid - maintains shop sections and prevents layout shifts
+     */
+    function renderProducts(productsByShop, shopOrder = []) {
+        if (Object.keys(productsByShop).length === 0) {
+            // No products found
+            productsGrid.innerHTML = emptyState();
+            return;
+        }
+
+        let html = '';
+
+        // Use provided shop order or fallback to object keys
+        const orderedShops = shopOrder.length > 0 ? shopOrder : Object.keys(productsByShop);
+
+        orderedShops.forEach(businessId => {
+            const shopData = productsByShop[businessId];
+            if (!shopData) return;
+
+            const productCount = shopData.products.length;
+            html += `
+                <div class="mb-12" data-business-id="${businessId}" style="min-height: 100px;">
+                    <div class="flex items-center gap-4 mb-6">
+                        <div class="w-12 h-12 bg-gray-900 rounded-full flex items-center justify-center">
+                            <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3.75 21h16.5M4.5 3h15M5.25 3v18m13.5-18v18M9 6.75h1.5m-1.5 3h1.5m-1.5 3h1.5m3-6H15m-1.5 3H15m-1.5 3H15M9 21v-3.375c0-.621.504-1.125 1.125-1.125h3.75c.621 0 1.125.504 1.125 1.125V21" />
+                            </svg>
+                        </div>
+                        <div>
+                            <h2 class="text-[24px] font-serif-display text-gray-900">${shopData.business_name}</h2>
+                            <p class="text-gray-600 text-[14px]" data-product-count>${productCount} product${productCount > 1 ? 's' : ''}</p>
+                        </div>
+                    </div>
+
+                    <!-- Products Grid for this Shop -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                        ${shopData.products.map(product => createProductCard(product)).join('')}
+                    </div>
+                </div>
+            `;
+        });
+
+        // Clear and set new content (prevents duplication)
+        productsGrid.innerHTML = '';
+        productsGrid.innerHTML = html;
     }
 
     /**
@@ -403,9 +537,11 @@
 
     // Initialize on DOM ready
     if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', init);
+        document.addEventListener('DOMContentLoaded', () => {
+            setTimeout(init, 100);
+        });
     } else {
-        init();
+        setTimeout(init, 100);
     }
 
     // Expose functions globally for onclick handlers
